@@ -1,0 +1,14 @@
+The data file is made of an header and sequential arrays (all arrays are concatenated), as follows: 
+Header: Number of particles(N), Number of gas particles(N*=0 there is actually no gas particle), Number of star particles
+
+Arrays(running through all i=1,...,N)
+Masses[i]
+x[i]
+y[i]
+z[i]
+Vx[i]
+Vy[i]
+Vz[i]
+softening[i]
+potential[i]
+
