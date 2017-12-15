@@ -192,10 +192,10 @@ def get_density_profile(x, y, z, mass):
     r = np.sqrt(x**2 + y**2 + z**2)
 
     # norm r
-    r = r / r.max()
+    # r = r / r.max()
 
 
-    nbins = 1000
+    nbins = 200
     maxbin = r.max()
     minbin = r.min()
 
@@ -214,7 +214,7 @@ def get_density_profile(x, y, z, mass):
     inds = np.digitize(r, bins, right=True)
 
     mass_profile = np.bincount(inds, weights=mass)
-    mass_profile = mass_profile / np.sum(mass_profile) # norm mass profile to 1
+    # mass_profile = mass_profile / np.sum(mass_profile) # norm mass profile to 1
 
     # get density profile
     density_profile = np.zeros((mass_profile.shape[0]))
@@ -253,7 +253,9 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     # prepare analytical model
     #==========================
 
+    #----------------------------------
     # find a: cum_mass(a) = tot_mass/4
+    #----------------------------------
     cum_mass = mass_profile*1.0
 
     for i in range(len(mass_profile)-1):
@@ -270,6 +272,9 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
             break
 
 
+    #------------------------------
+    # Define analytical functions
+    #------------------------------
 
     def rho(r, a, totmass):
         return totmass/(2 * np.pi) * a / r * 1/(r + a)**3
@@ -285,36 +290,105 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     # Plotting
     #==================
 
-    fig = plt.figure(facecolor='white', figsize=(20,8))
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
+    fig = plt.figure(facecolor='white', figsize=(25,8))
+    ax1 = fig.add_subplot(131)
+    ax2 = fig.add_subplot(132)
+    ax3 = fig.add_subplot(133)
+
+    #---------------
+    # get errorbars:
+    #---------------
+    # in some cases, where density_profile < 1, the error sqrt(dens_prof) > dens_prof
+    # => error bar would get negative, which is not permitted for logarithmic axes
+    # => replace error bar length there with 0.99999*dens_prof
+    derr_lower = np.sqrt(density_profile)
+    derr_upper = derr_lower*1.0
+    derr_lower[density_profile<=derr_lower]=density_profile[density_profile<=derr_lower]*0.999999
 
 
-    ax1.loglog(bins, density_profile, 'o', markersize=3)
+    cum_err_lower = np.sqrt(cum_mass)
+    cum_err_upper = cum_err_lower*1.0
+    cum_err_lower[cum_mass<=cum_err_lower]=cum_mass[cum_mass<=cum_err_lower]*0.999999
+
+    mass_err_lower = np.sqrt(mass_profile)
+    mass_err_upper = mass_err_lower*1.0
+    mass_err_lower[mass_profile<=mass_err_lower]=mass_profile[mass_profile<=mass_err_lower]*0.999999
+
+    #----------------------
+    # Plot density profile
+    #----------------------
+
+    ax1.errorbar(bins, density_profile, 
+            yerr=(derr_lower, derr_upper),
+            fmt='o',
+            markersize=1, 
+            capsize=2,
+            elinewidth=1)
     ax1.plot(bins, rho(bins, a, totmass))
-    ax1.set_title(r'density profile', family='serif', size=24, pad=20)
+    ax1.set_title(r'density profile', family='serif', size=24)
+    ax1.set_yscale('log')
+    ax1.set_xscale('log')
+    ax1.set_ylim([1e-7, 1e15])
 
-    ax2.loglog(bins, cum_mass, 'o', markersize=3)
-    ax2.plot(bins, M(bins, a, totmass))
-    ax2.set_title('Cumulative mass profile', family='serif', size=24)
 
 
+    #-----------------------
+    # Plot mass profile
+    #-----------------------
+    ax2.errorbar(bins, mass_profile, 
+            yerr=(mass_err_lower, mass_err_upper),
+            fmt='o',
+            markersize=1, 
+            capsize=2,
+            elinewidth=1)
+    ax2.set_title('mass profile', family='serif', size=24)
+
+    ax2.set_yscale('log')
+    ax2.set_xscale('log')
+
+
+
+    #--------------------------------
+    # Plot cumulative mass profile
+    #--------------------------------
+    ax3.errorbar(bins, 
+            cum_mass, 
+            yerr=(cum_err_lower, cum_err_upper),
+            fmt='o',
+            markersize=1, 
+            capsize=2,
+            elinewidth=1)
+    ax3.loglog(bins, cum_mass, 'o', markersize=3)
+    ax3.plot(bins, M(bins, a, totmass))
+    ax3.set_title('Cumulative mass profile', family='serif', size=24)
+
+
+
+
+    #----------------------
+    # Tweak plots
+    #----------------------
 
     # set tick params (especially digit size)
     ax1.tick_params(axis='both', which='major', labelsize=12, top=5)
     ax2.tick_params(axis='both', which='major', labelsize=12, top=5)
+    ax3.tick_params(axis='both', which='major', labelsize=12, top=5)
 
     #label axes
     ax1.set_xlabel(r'r', labelpad=20, family='serif', size=16)
     ax1.set_ylabel(r'density', labelpad=20, family='serif', size=16)
     ax2.set_xlabel(r'r', labelpad=20, family='serif', size=16)
-    ax2.set_ylabel(r'cumulative mass', labelpad=20, family='serif', size=16)
+    ax2.set_ylabel(r'mass', labelpad=20, family='serif', size=16)
+    ax3.set_xlabel(r'r', labelpad=20, family='serif', size=16)
+    ax3.set_ylabel(r'cumulative mass', labelpad=20, family='serif', size=16)
 
     plt.tight_layout()
 
 
 
+    #----------------------
     # Save figure
+    #----------------------
 
     workdir= str(getcwd())
     fig_path = workdir+'/'+outputfilename+'.png'
