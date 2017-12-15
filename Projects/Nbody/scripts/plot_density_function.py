@@ -34,7 +34,7 @@ def readdata(filename):
 
 
     RETURNS:
-        mass, x, y, z, vx, vy, vz, softening, potential
+        mass, x, y, z
         numpy arrays of read in data
 
     """
@@ -66,17 +66,17 @@ def readdata(filename):
     x = rawdata[npart:2*npart]
     y = rawdata[2*npart: 3*npart]
     z = rawdata[3*npart: 4*npart]
-    vx = rawdata[4*npart: 5*npart]
-    vy = rawdata[5*npart: 6*npart]
-    vz = rawdata[6*npart: 7*npart]
-    softening = rawdata[7*npart: 8*npart]
-    potential = rawdata[9*npart: 10*npart]
+    # vx = rawdata[4*npart: 5*npart]
+    # vy = rawdata[5*npart: 6*npart]
+    # vz = rawdata[6*npart: 7*npart]
+    # softening = rawdata[7*npart: 8*npart]
+    # potential = rawdata[9*npart: 10*npart]
 
    
 
 
 
-    return mass, x, y, z, vx, vy, vz, softening, potential
+    return mass, x, y, z #, vx, vy, vz, softening, potential
 
 
 
@@ -167,7 +167,7 @@ def plot3d(x, y, z, outputfilename):
 
 
 #======================================
-def get_density_profile(x, y, z, mass):
+def get_profiles(x, y, z, mass):
 #======================================
     """
 
@@ -178,9 +178,8 @@ def get_density_profile(x, y, z, mass):
 
 
     RETURNS:
-    r, bins, density_profile, mass_profile:    
-    r:          np.array of distance from origin of each particle
-    bins:       bin distance (particles sorted in bins by distance from origin)
+    bins, density_profile, mass_profile    
+    bins:           bin distance (particles sorted in bins by distance from origin)
     density_profile,
     mass_profile :  np.array of density/mass profile
     """
@@ -221,23 +220,25 @@ def get_density_profile(x, y, z, mass):
     density_profile[1:] = mass_profile[1:] / (4 / 3 * np.pi * (bins[1:]**3-bins[:-1]**3))
     density_profile[0] = mass_profile[0]/ (4 / 3 * np.pi * bins[0]**3 )
 
-    return r, bins, density_profile, mass_profile
+    return bins, density_profile, mass_profile
 
 
 
 
 
 #=========================================================================
-def plot_density(r, bins, density_profile, mass_profile, outputfilename):
+def plot_profiles(bins, density_profile, mass_profile, outputfilename):
 #=========================================================================
     """
     plots the density profile. 
 
     PARAMETERS:
 
-        bins:   bin positions
+        r:               distances from origin of each particle
+        bins:            bin positions
         density_profile: density profile to plot
-        outputfilename: output filename
+        mass_profile:    mass profile
+        outputfilename:  output filename
 
     RETURNS:
         
@@ -280,9 +281,12 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
         return totmass/(2 * np.pi) * a / r * 1/(r + a)**3
 
 
-    def M(r, a, totmass):
+    def cmp(r, a, totmass):
         return totmass * r**2/(r+a)**2
 
+
+    mass_profile_theory = np.zeros((bins.shape[0]))
+    mass_profile_theory[1:]=cmp(bins[1:], a, totmass )-cmp(bins[:-1], a, totmass)
 
 
 
@@ -290,7 +294,7 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     # Plotting
     #==================
 
-    fig = plt.figure(facecolor='white', figsize=(25,8))
+    fig = plt.figure(facecolor='white', figsize=(20, 8))
     ax1 = fig.add_subplot(131)
     ax2 = fig.add_subplot(132)
     ax3 = fig.add_subplot(133)
@@ -305,7 +309,6 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     derr_upper = derr_lower*1.0
     derr_lower[density_profile<=derr_lower]=density_profile[density_profile<=derr_lower]*0.999999
 
-
     cum_err_lower = np.sqrt(cum_mass)
     cum_err_upper = cum_err_lower*1.0
     cum_err_lower[cum_mass<=cum_err_lower]=cum_mass[cum_mass<=cum_err_lower]*0.999999
@@ -313,6 +316,9 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     mass_err_lower = np.sqrt(mass_profile)
     mass_err_upper = mass_err_lower*1.0
     mass_err_lower[mass_profile<=mass_err_lower]=mass_profile[mass_profile<=mass_err_lower]*0.999999
+
+
+
 
     #----------------------
     # Plot density profile
@@ -323,12 +329,10 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
             fmt='o',
             markersize=1, 
             capsize=2,
-            elinewidth=1)
-    ax1.plot(bins, rho(bins, a, totmass))
-    ax1.set_title(r'density profile', family='serif', size=24)
-    ax1.set_yscale('log')
-    ax1.set_xscale('log')
-    ax1.set_ylim([1e-7, 1e15])
+            elinewidth=1,
+            label='binned data')
+
+    ax1.plot(bins, rho(bins, a, totmass), label='theoretical model')
 
 
 
@@ -340,12 +344,9 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
             fmt='o',
             markersize=1, 
             capsize=2,
-            elinewidth=1)
-    ax2.set_title('mass profile', family='serif', size=24)
-
-    ax2.set_yscale('log')
-    ax2.set_xscale('log')
-
+            elinewidth=1,
+            label='binned data')
+    ax2.plot(bins, mass_profile_theory, label='theoretical model')
 
 
     #--------------------------------
@@ -357,10 +358,10 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
             fmt='o',
             markersize=1, 
             capsize=2,
-            elinewidth=1)
-    ax3.loglog(bins, cum_mass, 'o', markersize=3)
-    ax3.plot(bins, M(bins, a, totmass))
-    ax3.set_title('Cumulative mass profile', family='serif', size=24)
+            elinewidth=1,
+            label='binned data')
+
+    ax3.plot(bins, cmp(bins, a, totmass), label='theoretical model')
 
 
 
@@ -375,14 +376,70 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     ax3.tick_params(axis='both', which='major', labelsize=12, top=5)
 
     #label axes
-    ax1.set_xlabel(r'r', labelpad=20, family='serif', size=16)
-    ax1.set_ylabel(r'density', labelpad=20, family='serif', size=16)
-    ax2.set_xlabel(r'r', labelpad=20, family='serif', size=16)
-    ax2.set_ylabel(r'mass', labelpad=20, family='serif', size=16)
-    ax3.set_xlabel(r'r', labelpad=20, family='serif', size=16)
-    ax3.set_ylabel(r'cumulative mass', labelpad=20, family='serif', size=16)
+    ax1.set_xlabel(r'r', 
+            labelpad=10, 
+            family='serif', 
+            size=16)
+    ax1.set_ylabel(r'density', 
+            labelpad=10, 
+            family='serif', 
+            size=16)
+    ax2.set_xlabel(r'r', 
+            labelpad=10, 
+            family='serif', 
+            size=16)
+    ax2.set_ylabel(r'mass', 
+            labelpad=10, 
+            family='serif', 
+            size=16)
+    ax3.set_xlabel(r'r', 
+            labelpad=10, 
+            family='serif', 
+            size=16)
+    ax3.set_ylabel(r'cumulative mass', 
+            labelpad=10, 
+            family='serif', 
+            size=16)
+
+    #titles
+    ax1.set_title(r'density profile', 
+            family='serif', 
+            size=18)
+    ax2.set_title('mass profile', 
+            family='serif', 
+            size=18)
+    ax3.set_title('cumulative mass profile', 
+            family='serif', 
+            size=18)
+
+
+    # set log scale
+    ax1.set_yscale('log')
+    ax1.set_xscale('log')
+    ax2.set_yscale('log')
+    ax2.set_xscale('log')
+    ax3.set_yscale('log')
+    ax3.set_xscale('log')
+
+    # set axis limits
+    ax1.set_ylim([1e-7, 1e15])
+
+
+    # grid
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+
+    # legend
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+
 
     plt.tight_layout()
+
+    # annotate figure with bin number
+    plt.figtext(.02, .03, str(bins.shape[0]-1)+' bins used', family='serif', size=12)
 
 
 
@@ -393,7 +450,7 @@ def plot_density(r, bins, density_profile, mass_profile, outputfilename):
     workdir= str(getcwd())
     fig_path = workdir+'/'+outputfilename+'.png'
     print("saving density profile plot as "+fig_path)
-    plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=100)#,bbox_inches='tight' )
+    plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )
     print("Done density profile plot")
 
     plt.close()
@@ -423,12 +480,12 @@ if __name__ == "__main__":
 
 
     filename = argv[1]
-    mass, x, y, z, vx, vy, vz, softening, potential = readdata(filename)
+
+    # read data
+    mass, x, y, z = readdata(filename)
    
-
-
-
-    r, bins, density_profile, mass_profile = get_density_profile(x, y, z, mass)
+    # get density and mass profile
+    bins, density_profile, mass_profile = get_profiles(x, y, z, mass)
 
 
 
@@ -436,6 +493,6 @@ if __name__ == "__main__":
     # plot3d(x, y, z, outputfilename)
 
     outputfilename = 'step0_density_plot'
-    plot_density(r, bins, density_profile, mass_profile, outputfilename)
+    plot_profiles(bins, density_profile, mass_profile, outputfilename)
     
     
