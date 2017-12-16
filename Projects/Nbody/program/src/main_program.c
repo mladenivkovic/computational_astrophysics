@@ -1,20 +1,91 @@
-/* 
- * Contains main program.
- */
+//=================================
+// Contains main program.
+//=================================
 
 
 
-#include <stdio.h>         /* input, output    */
-#include "init.h"
+#include <stdio.h>         
+#include <stdlib.h>
 #include "commons.h"
+#include "io.h"
 
-int
-main(int argc, char * argv[])    
+
+
+//=====================================
+// functions defined below
+//=====================================
+void initialise(int argc, char *argv[]);
+
+
+
+
+
+
+
+
+//=====================================
+int main(int argc, char * argv[])    
+//=====================================
 {
 
+  if (verbose);
+  {
+    printf("Started program.\n");
+  }
+  
   initialise(argc, argv);
 
-  printf("\nNx : %d \nNy : %d  \ndx : %f  \ndy : %f \n",  Nx,Ny,dx,dy);
+
+  if (verbose);
+  {
+    printf("I'm finished!\n");
+  }
   return(0);
+}
+
+
+
+
+
+
+
+
+
+
+//=======================================
+void initialise(int argc, char *argv[])
+//=======================================
+{
+  
+  //----------------------
+  // Set everything up.
+  //----------------------
+
+
+  //read params
+  readparams(argc, argv);
+
+  //read data
+  readdata(argv);
+
+  //transform read data to units
+  void set_units();
+  set_units();
+
+}
+
+
+
+
+
+//==================
+void set_units()
+//==================
+{
+
+  //--------------------------------------------
+  // Sets units of read data to chosen units
+  //--------------------------------------------
+
 }
 

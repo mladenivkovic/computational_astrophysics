@@ -40,9 +40,9 @@ VPATH = $(IDIR):../src
 
 #SOURCES=$(wildcard *.c)
 
-SOURCES= commons.c  init.c  main_program.c
+SOURCES= commons.c  io.c  main_program.c
 
-HEADERS = commons.h  init.h
+HEADERS = commons.h  io.h
 
 OBJECTS = $(notdir $(patsubst %.c, %.o, $(wildcard ../src/*.c)))
 
