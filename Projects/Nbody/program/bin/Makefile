@@ -10,12 +10,8 @@
 
 EXEC=nbody #executable name
 IDIR=../include #include headers from this directory
-#DONT FUCK AROUND WITH SRCDIR, IT DOESN'T WORK
+SRCDIR=../src
 
-NDIM=3
-
-# Define compile time variables to be passed on
-DEFINES=-DNDIM=$(NDIM)
 
 #==================================
 # COMPILER OPTIONS AND DIRECTIVES
@@ -23,12 +19,16 @@ DEFINES=-DNDIM=$(NDIM)
 
 
 #Compiler to use
-CC=gcc -I$(IDIR) $(DEFINES)
+CC=gcc -I$(IDIR)
 
-# flags for gfortran compiler
-CFLAGS= -g -O0 -Wall # debug
+
+
+# flags for gcc compiler
+CFLAGS= -g -Og -Wall -Wextra     # debug
 #CFLAGS= -O3  		 # performance
 
+
+LDFLAGS= -lm
 
 
 #==================================
@@ -36,15 +36,11 @@ CFLAGS= -g -O0 -Wall # debug
 #==================================
 
 #include paths. Will be followed in that order.
-VPATH = $(IDIR):../src
 
-#SOURCES=$(wildcard *.c)
+VPATH=$(IDIR):$(SRCDIR)
 
-SOURCES= commons.c  io.c  main_program.c
 
-HEADERS = commons.h  io.h
-
-OBJECTS = $(notdir $(patsubst %.c, %.o, $(wildcard ../src/*.c)))
+OBJECTS = $(notdir $(patsubst %.c, %.o, $(wildcard $(SRCDIR)/*.c)))
 
 
 
@@ -53,13 +49,15 @@ OBJECTS = $(notdir $(patsubst %.c, %.o, $(wildcard ../src/*.c)))
 #==================================
 
 
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c -o $(notdir $@) $<
-	$(info $@)
-#	-c : compile and assemble, but do not link
+default: $(EXEC)
+
 
 $(EXEC): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+%.o:  %.c %.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+#-c : compile and assemble, but do not link
 
 
 
@@ -69,5 +67,5 @@ $(EXEC): $(OBJECTS)
 .PHONY: clean # keeps makefile from doing something with a file named clean
 
 clean:
-	rm -f *.o $(EXEC)
+	rm -f $(OBJECTS) $(EXEC)
 

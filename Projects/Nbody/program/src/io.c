@@ -21,7 +21,7 @@ void readparams(int argc, char *argv[])
 
 
 
-  if (verbose);
+  if (verbose)
   {
     printf("Reading parameters.\n");
   }
@@ -114,7 +114,7 @@ void readdata(char *argv[])
   //-----------------------------------------------------------
 
 
-  if (verbose);
+  if (verbose)
   {
     printf("Reading in data.\n");
   }
@@ -138,8 +138,8 @@ void readdata(char *argv[])
     exit(1);
     }
 
-
-  fscanf(data, "%d %d %d\n", &npart, &ngaspart, &nstarpart);
+  int info;
+  info = fscanf(data, "%d %d %d\n", &npart, &ngaspart, &nstarpart);
   
 
 
@@ -147,16 +147,16 @@ void readdata(char *argv[])
   // Initialize arrays
   //--------------------------
   
-  
-  m = (double*)calloc(npart, sizeof(double));
-  x = (double*)calloc(npart, sizeof(double));
-  y = (double*)calloc(npart, sizeof(double));
-  z = (double*)calloc(npart, sizeof(double));
-  vx = (double*)calloc(npart, sizeof(double));
-  vy = (double*)calloc(npart, sizeof(double));
-  vz = (double*)calloc(npart, sizeof(double));
-  softening_data = (double*)calloc(npart, sizeof(double));
-  potential_data = (double*)calloc(npart, sizeof(double));
+ //TODO: remove cast? 
+  m = calloc(npart, sizeof(double));
+  x = calloc(npart, sizeof(double));
+  y = calloc(npart, sizeof(double));
+  z = calloc(npart, sizeof(double));
+  vx = calloc(npart, sizeof(double));
+  vy = calloc(npart, sizeof(double));
+  vz = calloc(npart, sizeof(double));
+  softening_data = calloc(npart, sizeof(double));
+  potential_data = calloc(npart, sizeof(double));
 
 
 
@@ -170,7 +170,7 @@ void readdata(char *argv[])
 
   for (int value=0; value<9; value++){
     for (int i = 0; i < npart; i++){
-      fscanf(data, "%lf\n", &data_arr[value][i]);
+      info = fscanf(data, "%lf\n", &data_arr[value][i]);
     }
   }
  

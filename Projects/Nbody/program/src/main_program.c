@@ -6,8 +6,10 @@
 
 #include <stdio.h>         
 #include <stdlib.h>
+#include <math.h>
 #include "commons.h"
 #include "io.h"
+#include "calculations.h"
 
 
 
@@ -24,11 +26,11 @@ void initialise(int argc, char *argv[]);
 
 
 //=====================================
-int main(int argc, char * argv[])    
+int main(int argc, char *argv[])    
 //=====================================
 {
 
-  if (verbose);
+  if (verbose)
   {
     printf("Started program.\n");
   }
@@ -36,7 +38,7 @@ int main(int argc, char * argv[])
   initialise(argc, argv);
 
 
-  if (verbose);
+  if (verbose)
   {
     printf("I'm finished!\n");
   }
@@ -62,30 +64,17 @@ void initialise(int argc, char *argv[])
   //----------------------
 
 
-  //read params
+  //read parameters
   readparams(argc, argv);
 
   //read data
   readdata(argv);
 
   //transform read data to units
-  void set_units();
   set_units();
 
 }
 
 
 
-
-
-//==================
-void set_units()
-//==================
-{
-
-  //--------------------------------------------
-  // Sets units of read data to chosen units
-  //--------------------------------------------
-
-}
 
