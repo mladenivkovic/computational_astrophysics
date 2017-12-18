@@ -11,10 +11,21 @@
 
 
 //runtime vars
-extern int verbose; //verbose = false by default
+extern int verbose;         //verbose = false by default
+extern double f_softening;  // softening factor 
+extern int direct_force;    // do direct force calculation
+extern int calc_potential;  // do potential calculation
+
+
+
+// global params
 extern int npart;
 extern int ngaspart;
 extern int nstarpart;
+
+extern double softening;
+
+
 
 
 // units
@@ -54,6 +65,9 @@ extern double *phi;// potential
 
 
 //---------------
-// FUNCITONS
+// constants
 //---------------
 
+
+extern const double pi;
+extern const double G;

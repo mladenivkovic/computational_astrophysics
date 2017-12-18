@@ -34,8 +34,19 @@ int main(int argc, char *argv[])
   {
     printf("Started program.\n");
   }
-  
+ 
+
+
+  // Initialise program
   initialise(argc, argv);
+
+
+  // get direct force calc
+  if (direct_force) {
+    get_direct_force();
+  }
+
+
 
 
   if (verbose)

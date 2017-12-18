@@ -13,11 +13,21 @@
 //---------------
 
 //runtime vars
-int verbose = 0; //verbose = false by default
+int verbose = 0;        // verbose = false by default
+double f_softening = 0; // softening factor: epsilon = f_softening * mean_interparticle_distance
 
+int direct_force = 0;   // do direct force calculation
+int calc_potential = 0; // do potential calculation
+
+
+
+
+// global params
 int npart = 0;
 int ngaspart = 0;
 int nstarpart = 0;
+
+double softening = 0;
 
 
 
@@ -60,6 +70,8 @@ double *phi = 0;// potential
 
 
 //---------------
-// FUNCITONS
+// CONSANTS
 //---------------
 
+double const pi = 3.14159265359;
+double const G = 6.674083e-11; //gravitational constant

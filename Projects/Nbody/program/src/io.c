@@ -72,6 +72,15 @@ void readparams(int argc, char *argv[])
       // atoi/atof: convert string to integer/float
       // from stdlib.h
       } 
+      else if (strcmp(varname, "f_softening") == 0){
+        f_softening = atof(varvalue);
+      }
+      else if (strcmp(varname, "direct_force")==0){
+        direct_force = atoi(varvalue);
+      }
+      else if (strcmp(varname, "calc_potential")==0){
+        calc_potential = atoi(varvalue);
+      }
       else if (strcmp(varname, "//")==0) {
         // ignore comments
         continue;
@@ -147,7 +156,6 @@ void readdata(char *argv[])
   // Initialize arrays
   //--------------------------
   
- //TODO: remove cast? 
   m = calloc(npart, sizeof(double));
   x = calloc(npart, sizeof(double));
   y = calloc(npart, sizeof(double));
@@ -158,6 +166,11 @@ void readdata(char *argv[])
   softening_data = calloc(npart, sizeof(double));
   potential_data = calloc(npart, sizeof(double));
 
+  fx = calloc(npart, sizeof(double));
+  fy = calloc(npart, sizeof(double));
+  fz = calloc(npart, sizeof(double));
+  r = calloc(npart, sizeof(double));
+  phi = calloc(npart, sizeof(double));
 
 
   // --------------------------
