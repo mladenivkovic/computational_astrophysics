@@ -7,6 +7,7 @@
 #include <stdio.h>         
 #include <string.h>     
 #include <stdlib.h>    
+#include <math.h>
 #include "commons.h"
 
 
@@ -187,6 +188,84 @@ void readdata(char *argv[])
     }
   }
  
+
+
+}
+
+
+
+
+
+//============================
+void output_direct_force()
+//============================
+{
+
+  //-------------------------------------
+  // Writes direct forces results to file.
+  //-------------------------------------
+ 
+  if(verbose){ printf("Writing direct forces to file.\n"); }
+
+  // get filename
+  char filename[80] = "output_direct_force_"; 
+  char softening_str[10];
+  sprintf(softening_str, "%.4g", f_softening);
+  strcat(filename, softening_str);
+  strcat(filename, ".dat");
+
+  printf("Got filename %s\n", filename);
+
+
+
+
+  // write to file
+  FILE *outfilep = fopen(filename, "w");
+
+  fprintf(outfilep, "%15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s\n", "x ", "y ", "z ", "r ", "m ", "fx", "fy", "fz", "ftot");
+  for (int i = 0; i<npart; i++){
+    fprintf(outfilep, "%15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g\n", x[i], y[i], z[i], r[i], m[i], fx[i], fy[i], fz[i], sqrt(pow(fx[i],2) + pow(fy[i], 2) + pow(fz[i], 2) ) );
+  }
+
+  fclose(outfilep);
+
+}
+
+
+
+
+
+
+
+
+
+
+//==============================
+void write_info()
+//==============================
+{
+
+  //-------------------------------------
+  // Writes run info to file.
+  //-------------------------------------
+ 
+  if(verbose){ printf("Writing info to file.\n"); }
+  // get filename
+  char filename[80] = "info_"; 
+  char softening_str[10];
+  sprintf(softening_str, "%.4g", f_softening);
+  strcat(filename, softening_str);
+  strcat(filename, ".txt");
+
+  printf("Got filename %s\n", filename);
+
+  // write to file
+  FILE *outfilep = fopen(filename, "w");
+
+  fprintf(outfilep, "%15s \t %15s \t %15s \t %15s\n", "scale_m", "scale_l", "scale_t", "softening");
+  fprintf(outfilep, "%15g \t %15g \t %15g \t %15g\n", scale_m, scale_l, scale_t, softening);
+
+  fclose(outfilep);
 
 
 }

@@ -24,8 +24,8 @@ CC=gcc -I$(IDIR) -fopenmp
 
 
 # flags for gcc compiler
-CFLAGS= -g -Og -Wall -Wextra     #debug
-# CFLAGS= -O3  		 # performance
+# CFLAGS= -g -Og -Wall -Wextra     #debug
+CFLAGS= -O3  		 	   # performance
 
 
 LDFLAGS= -lm

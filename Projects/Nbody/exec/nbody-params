@@ -4,4 +4,4 @@ direct_force = 1;
 calc_potential = 0;
 
 // other stuff
-f_softening = 2.3;
+f_softening = 100;
