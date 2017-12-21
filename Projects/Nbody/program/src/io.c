@@ -9,6 +9,7 @@
 #include <stdlib.h>    
 #include <math.h>
 #include "commons.h"
+#include "multipole.h"
 
 
 //======================================
@@ -79,8 +80,14 @@ void readparams(int argc, char *argv[])
       else if (strcmp(varname, "direct_force")==0){
         direct_force = atoi(varvalue);
       }
-      else if (strcmp(varname, "calc_potential")==0){
-        calc_potential = atoi(varvalue);
+      else if (strcmp(varname, "ncellmax")==0){
+        ncellmax = atoi(varvalue);
+      }
+      else if (strcmp(varname, "multipole")==0){
+        multipole = atoi(varvalue);
+      }
+      else if (strcmp(varname, "ncellpartmax")==0){
+        ncellpartmax = atoi(varvalue);
       }
       else if (strcmp(varname, "//")==0) {
         // ignore comments
@@ -214,8 +221,6 @@ void output_direct_force()
   strcat(filename, softening_str);
   strcat(filename, ".dat");
 
-  printf("Got filename %s\n", filename);
-
 
 
 
@@ -254,10 +259,16 @@ void write_info()
   char filename[80] = "info_"; 
   char softening_str[10];
   sprintf(softening_str, "%.4g", f_softening);
-  strcat(filename, softening_str);
+
+  if (multipole) {
+    strcat(filename, "multipole");
+  }
+  else {
+    strcat(filename, softening_str); // direct force run
+  }
+
   strcat(filename, ".txt");
 
-  printf("Got filename %s\n", filename);
 
   // write to file
   FILE *outfilep = fopen(filename, "w");
@@ -269,3 +280,51 @@ void write_info()
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+//============================
+void write_cellparticles()
+//============================
+{
+
+  //-------------------------------------
+  // Writes direct forces results to file.
+  //-------------------------------------
+ 
+  if(verbose){ printf("Writing cell particle info to file.\n"); }
+
+
+
+  // write to file
+  FILE *outfilep = fopen("cellparticles.dat", "w");
+
+  int totpart = 0;
+
+  fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
+  for (int i = 0; i<8; i++){
+    node cell = cells[i];
+    totpart += cell.np;
+    for (int p = 0; p < cell.np; p++){
+      int pind = cell.particles[p];
+      fprintf(outfilep, "%15g   %15g   %15g   %15d \n", x[pind], y[pind], z[pind], partcell[pind] );
+    }
+  }
+
+  printf("Written %d particles from cells in total\n", totpart);
+
+  fclose(outfilep);
+
+}
+
+

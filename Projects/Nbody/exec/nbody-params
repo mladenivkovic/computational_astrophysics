@@ -1,7 +1,9 @@
 // Behaviour
 verbose = 1;
-direct_force = 1;
-calc_potential = 0;
+direct_force = 0;
+multipole = 1;
+ncellpartmax = 10;
+
 
 // other stuff
 f_softening = 100;

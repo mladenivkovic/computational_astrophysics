@@ -14,7 +14,7 @@
 extern int verbose;         //verbose = false by default
 extern double f_softening;  // softening factor 
 extern int direct_force;    // do direct force calculation
-extern int calc_potential;  // do potential calculation
+extern int multipole;       // do multiplole calculation
 
 
 
@@ -23,8 +23,17 @@ extern int npart;
 extern int ngaspart;
 extern int nstarpart;
 
+
+// direct force
 extern double softening;
 
+
+// multipole
+extern unsigned int ncellmax; // maximal number of cells
+extern int ncellpartmax;      // maximal number of particles per cell (refinement criterion)
+extern double boxlen;
+
+extern int max_refinement_level;
 
 
 
@@ -71,3 +80,6 @@ extern double *phi;// potential
 
 extern const double pi;
 extern const double G;
+
+
+

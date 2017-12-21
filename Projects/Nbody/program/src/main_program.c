@@ -10,6 +10,7 @@
 #include "commons.h"
 #include "io.h"
 #include "direct_forces.h"
+#include "multipole.h"
 
 
 
@@ -44,11 +45,18 @@ int main(int argc, char *argv[])
 
   // get direct force calc
   if (direct_force) {
+    if (verbose) {printf("Started direct force calculation.\n");}
     get_direct_force();
-  }
     output_direct_force();
+  }
 
 
+  // build tree
+  if (multipole) {
+    if (verbose) {printf("Started multipole force calculation.\n");}
+    build_tree();
+    write_cellparticles();
+  }
 
   // write run info
   write_info();
@@ -221,7 +229,6 @@ void get_scales()
   }
 
   scale_l = rmax;
-
 
 
 

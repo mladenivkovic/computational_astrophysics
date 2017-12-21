@@ -17,7 +17,7 @@ int verbose = 0;        // verbose = false by default
 double f_softening = 0; // softening factor: epsilon = f_softening * mean_interparticle_distance
 
 int direct_force = 0;   // do direct force calculation
-int calc_potential = 0; // do potential calculation
+int multipole = 0; // do potential calculation
 
 
 
@@ -27,8 +27,16 @@ int npart = 0;
 int ngaspart = 0;
 int nstarpart = 0;
 
+
+// direct force
 double softening = 0;
 
+
+// multipole
+unsigned int ncellmax = 0;
+int ncellpartmax = 0;
+double boxlen = 0;
+int max_refinement_level = 1;
 
 
 // units
