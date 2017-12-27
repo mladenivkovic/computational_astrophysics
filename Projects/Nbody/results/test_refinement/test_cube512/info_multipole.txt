@@ -1,0 +1,2 @@
+        scale_m 	         scale_l 	         scale_t 	       softening
+            512 	         6.06218 	         80744.4 	               0

@@ -11,7 +11,7 @@
 
 
 
-npart = 4
+npart = 8 # particles in each dimension
 step = 1
 
 

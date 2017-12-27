@@ -91,12 +91,13 @@ void build_tree(){
     levelcounter += 1;
     to_refine = 0;
 
+  if (verbose) {printf("Refining level %3d -> %3d: %5d cells to refine, ", levelcounter, levelcounter+1, nthislevel); }
+
     for (int n = 0; n < nthislevel; n++){
       refine(cells[thislevel_refine[n]]);
     }
 
-
-printf("Finished refining parents of level %d with nthis=%d and nnext=%d\n", levelcounter, nthislevel, nnextlevel);
+  if (verbose) { printf("%5d children need refinement\n", nnextlevel); }
 
 
     // check whether another step is necessary
@@ -379,8 +380,6 @@ void refine(node * parent)
   int ind;
   int thispart;
 
-int checktot = 0;
-int checktwo = 0;
 
   node *thischild;
   for (int p = 0; p < npar; p++){
@@ -397,18 +396,8 @@ int checktwo = 0;
     thischild = newchildren[ind];
     thischild->particles[thischild->np] = thispart;
     thischild->np += 1;
-    checktot += 1;
 
   }
-
-
-
-printf("Parent %d, checked npart %d. Total in children: %d\n", parind, npar, checktot);
-  for (int i = 0; i<8; i++){
-    printf("child %d has np %d\n", i, newchildren[i]->np);
-    checktwo += newchildren[i]->np;
-  }
-printf("Sum of children particles: %d\n", checktwo);
 
 
 
