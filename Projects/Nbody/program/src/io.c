@@ -298,9 +298,9 @@ void write_cellparticles()
 //============================
 {
 
-  //-------------------------------------
-  // Writes direct forces results to file.
-  //-------------------------------------
+  //-----------------------------------------------------
+  // Writes particle-cell division to file.
+  //-----------------------------------------------------
  
   if(verbose){ printf("Writing cell particle info to file.\n"); }
 
@@ -309,19 +309,11 @@ void write_cellparticles()
   // write to file
   FILE *outfilep = fopen("cellparticles.dat", "w");
 
-  int totpart = 0;
 
   fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
-  for (int i = 0; i<8; i++){
-    node cell = cells[i];
-    totpart += cell.np;
-    for (int p = 0; p < cell.np; p++){
-      int pind = cell.particles[p];
-      fprintf(outfilep, "%15g   %15g   %15g   %15d \n", x[pind], y[pind], z[pind], partcell[pind] );
-    }
+  for (int p = 0; p < npart; p++){
+    fprintf(outfilep, "%15g   %15g   %15g   %15d \n", x[p], y[p], z[p], partcell[p] );
   }
-
-  printf("Written %d particles from cells in total\n", totpart);
 
   fclose(outfilep);
 

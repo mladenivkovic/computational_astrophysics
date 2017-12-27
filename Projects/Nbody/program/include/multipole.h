@@ -35,7 +35,7 @@ typedef struct {
 // Global vars and arrays
 //=======================
 extern unsigned int lastcell; // index of first free cell
-extern node *cells;           // array of all cells of all levels
+extern node ** cells;           // array of all cells of all levels
 extern int * partcell;        // most refined cell a particle belongs to
 
 extern int * thislevel_refine; // cells to refine on this level

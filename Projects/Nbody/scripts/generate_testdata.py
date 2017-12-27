@@ -10,7 +10,7 @@
 
 import random 
 
-npart = 100
+npart = 16
 minval = -10
 maxval = 10
 

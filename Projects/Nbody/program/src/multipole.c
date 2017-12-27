@@ -17,7 +17,7 @@
 // Global Vars
 //===============
 
-node * cells = 0;
+node ** cells = 0;
 unsigned int lastcell = 8;
 int * partcell = 0;
 
@@ -38,7 +38,7 @@ int to_refine = 1;
 //================
 
 void build_root();
-void refine(node parentnode);
+void refine(node * parentnode);
 
 
 
@@ -64,7 +64,7 @@ void build_tree(){
   if (ncellmax == 0) { ncellmax = 20*8*npart; }
 
   // allocate cells array
-  cells = calloc(ncellmax, sizeof(node));
+  cells = malloc(ncellmax * sizeof(node*));
   
   // set boxlen = 2*rmax
   boxlen = 2 ;
@@ -80,7 +80,6 @@ void build_tree(){
 
 
 
-
   //------------------
   // Start refinement
   //------------------
@@ -93,53 +92,70 @@ void build_tree(){
     to_refine = 0;
 
     for (int n = 0; n < nthislevel; n++){
-
-// printf("Going for cell %d with %d particles at level %d\n", n, cells[n].np, levelcounter-1);
-     
       refine(cells[thislevel_refine[n]]);
     }
 
-    
-printf("Finished level %d with nthis=%d and nnext=%d\n", levelcounter-1, nthislevel, nnextlevel);
-printf("nthis:\n");
-for (int i = 0; i<nthislevel; i++){
-  printf("%d ", thislevel_refine[i]);
-}
-printf("\nnnext:\n");
-for (int i = 0; i<nnextlevel; i++){
-  printf("%d ", nextlevel_refine[i]);
-}
-printf("\ntotal cells:%d\n\n",lastcell);
+
+printf("Finished refining parents of level %d with nthis=%d and nnext=%d\n", levelcounter, nthislevel, nnextlevel);
 
 
     // check whether another step is necessary
     if (nnextlevel > 0){
-      
+
       // repeat on
       to_refine = 1;
 
       // copy next level cells into this level cell array
-      thislevel_refine = calloc(pow(8,levelcounter), sizeof(int));
+      thislevel_refine = realloc(thislevel_refine, nnextlevel*sizeof(int));
       for (int n = 0; n<nnextlevel; n++){
         thislevel_refine[n]=nextlevel_refine[n];
       }
+
       nthislevel = nnextlevel;
-      
+
       // initialize new next level cell array
-      nextlevel_refine = calloc(pow(8,levelcounter + 1), sizeof(int));
+      nextlevel_refine = realloc(nextlevel_refine,nthislevel*8*sizeof(int));
 
       // reset number of next level particles
       nnextlevel = 0;
     }
 
-
   }
 
 
 
+  // cleanup
+  free(thislevel_refine);
+  free(nextlevel_refine);
+
 
   printf("Finished refinement. Max level: %d, ncells: %d\n", max_refinement_level, lastcell);
-  
+
+
+
+// write to file
+FILE *outfilep = fopen("cellcentres.dat", "w");
+
+
+
+fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
+for (unsigned int i = 0; i<lastcell; i++){
+  node *cell = cells[i];
+  double xc = cell->center[0];
+  double yc = cell->center[1];
+  double zc = cell->center[2];
+
+  fprintf(outfilep, "%15g   %15g   %15g   %15d \n", xc, yc, zc, i );
+}
+
+
+fclose(outfilep);
+
+
+
+
+
+
 
 }
 
@@ -164,7 +180,6 @@ void build_root()
 
 
 
-
   //-----------------
   // Preparation
   //-----------------
@@ -173,7 +188,8 @@ void build_root()
   partcell = calloc(npart, sizeof(int));
 
 
-  double c = boxlen/2;
+
+  double c = boxlen/4;
   
   // centres for level one:
   double cs[8][3] = { {-c, -c, -c}, {c, -c, -c}, {-c, c, -c}, {c, c, -c}, {-c, -c, c}, {c, -c, c}, {-c, c, c}, {c, c, c} };
@@ -192,23 +208,27 @@ void build_root()
   
   for (int i =0; i<8; i++) {
 
-    int nochild[] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    int * nochild = malloc(8*sizeof(int));
+    for (int j = 0; j<8; j++) { nochild[j] = -1; }
 
-    double thiscenter[] = {cs[i][0], cs[i][1], cs[i][2]};
-    int * parray = calloc(npart, sizeof(int));
+    double *thiscenter = malloc(3*sizeof(double));
+    for (int j = 0; j<3; j++) { thiscenter[j] = cs[i][j]; }
 
-    node root = {-1, i, 1, nochild, thiscenter , 0, parray } ;
+    int *parray = malloc(npart * sizeof(int));
+
+    node *root = malloc(sizeof(node));
+
+    root->parent = -1;
+    root->cellindex = i;
+    root->level = 1;
+    root->child = nochild;
+    root->center = thiscenter;
+    root->np = 0;
+    root->particles = parray;
 
 
     cells[i] = root;
 
-    // printf("TESTING %d\n", i);
-    // printf("parent %d\nchildren ", cells[i].parent);
-    // for (int j = 0; j<8; j++) { printf("%d ", cells[i].child[j]); }
-    // printf("\nlevel %d\ncenter ", cells[i].level);
-    // for (int j = 0; j<3; j++) { printf("%g ", cells[i].center[j]); }
-    // printf("\n\n");
-  
   }
 
 
@@ -241,10 +261,10 @@ void build_root()
     partcell[p] = ind;
 
     // add particle to root linked list
-    cells[ind].particles[ cells[ind].np ] = p;
+    cells[ind]->particles[ cells[ind]->np ] = p;
 
     // raise particle counter for root cell
-    cells[ind].np += 1;
+    cells[ind]->np += 1;
 
   }
 
@@ -252,19 +272,12 @@ void build_root()
   // find out which root cells need to be refined
 
   for (int i = 0; i<8; i++){
-    if (cells[i].np > ncellpartmax){
-// printf("roottest %d %d %d\n", i, cells[i].np, cells[i].cellindex);
+  if (cells[i]->np > ncellpartmax){
       thislevel_refine[nthislevel] = i;
       nthislevel += 1;
     }
   }
 
-
-// printf("Finished building root with nthis=%d and nnext=%d\n", nthislevel,  nnextlevel);
-// printf("\nnthis:\n");
-// for (int i = 0; i<nthislevel; i++){
-//   printf("%d ", thislevel_refine[i]);
-// }
 
 
 }
@@ -282,12 +295,12 @@ void build_root()
 
 
 //===========================
-void refine(node parent)
+void refine(node * parent)
 //===========================
 {
   
 
-  if (verbose) {printf("Refining cell %d of level %d\n", parent.cellindex, parent.level);}
+  // if (verbose) {printf("Refining cell %d of level %d with npart %d\n", parent->cellindex, parent->level, parent->np);}
 
 
 
@@ -295,17 +308,17 @@ void refine(node parent)
   // Preparation
   //---------------------
 
-  node * newchildren = calloc(8, sizeof(node));
+  node ** newchildren = malloc(8 * sizeof(node*));
 
-  double xp = parent.center[0];
-  double yp = parent.center[1];
-  double zp = parent.center[2];
-  int npar = parent.np;
-  int parind = parent.cellindex;
+  double xp = parent->center[0];
+  double yp = parent->center[1];
+  double zp = parent->center[2];
+  int npar = parent->np;
+  int parind = parent->cellindex;
 
 
   // get child level, update max ref level so far
-  int childlevel = parent.level + 1;
+  int childlevel = parent->level + 1;
 
   if (max_refinement_level < childlevel) { 
     max_refinement_level = childlevel; 
@@ -313,9 +326,9 @@ void refine(node parent)
 
   
   // centres for child level:
-  double c = boxlen/pow(2, childlevel);
+  double c = boxlen/pow(2, childlevel+1);
 
-printf("boxlen: %g c: %g\n", boxlen, c);
+
   double cs[8][3] = { {xp-c, yp-c, zp-c}, {xp+c, yp-c, zp-c}, {xp-c, yp+c, zp-c}, {xp+c, yp+c, zp-c}, {xp-c, yp-c, zp+c}, {xp+c, yp+-c, zp+c}, {xp-c, yp+c, zp+c}, {xp+c, yp+c, zp+c} };
 
   
@@ -328,15 +341,28 @@ printf("boxlen: %g c: %g\n", boxlen, c);
   
   for (int i =0; i<8; i++) {
 
-    int nochild[] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    double thiscenter[] = {cs[i][0], cs[i][1], cs[i][2]};
-    int * parray = calloc(npar, sizeof(int));
 
-    node thischild = {parind, -1, childlevel, nochild, thiscenter, 0, parray } ;
 
+    int * nochild = malloc(8*sizeof(int));
+    for (int j = 0; j<8; j++) { nochild[j] = -1; }
+
+    double *thiscenter = malloc(3*sizeof(double));
+    for (int j = 0; j<3; j++) { thiscenter[j] = cs[i][j]; }
+
+    int *parray = malloc(npart * sizeof(int));
+
+    node *thischild = malloc(sizeof(node));
+
+
+    thischild->parent = parind;
+    thischild->cellindex = -1;
+    thischild->level = childlevel;
+    thischild->child = nochild;
+    thischild->center = thiscenter;
+    thischild->np = 0;
+    thischild->particles = parray;
 
     newchildren[i] = thischild;
-
   }
 
 
@@ -351,26 +377,38 @@ printf("boxlen: %g c: %g\n", boxlen, c);
   int j = 0;
   int k = 0;
   int ind;
+  int thispart;
 
+int checktot = 0;
+int checktwo = 0;
 
   node *thischild;
   for (int p = 0; p < npar; p++){
 
+    thispart = parent->particles[p];
     i = 0;
     j = 0;
     k = 0;
-    if (x[p] > xp){ i = 1; }
-    if (y[p] > yp){ j = 1; }
-    if (z[p] > zp){ k = 1; }
-printf("x %7g xp %7g y %7g yp %7g z %7g zp %7g c %7g\n", x[p], xp, y[p], yp, z[p], zp, c);
+    if (x[thispart] > xp){ i = 1; }
+    if (y[thispart] > yp){ j = 1; }
+    if (z[thispart] > zp){ k = 1; }
     ind = i + 2*j + 4*k;
 
-    thischild = &newchildren[ind];
-    (*thischild).particles[(*thischild).np] = p;
-    (*thischild).np += 1;
+    thischild = newchildren[ind];
+    thischild->particles[thischild->np] = thispart;
+    thischild->np += 1;
+    checktot += 1;
 
   }
 
+
+
+printf("Parent %d, checked npart %d. Total in children: %d\n", parind, npar, checktot);
+  for (int i = 0; i<8; i++){
+    printf("child %d has np %d\n", i, newchildren[i]->np);
+    checktwo += newchildren[i]->np;
+  }
+printf("Sum of children particles: %d\n", checktwo);
 
 
 
@@ -385,39 +423,44 @@ printf("x %7g xp %7g y %7g yp %7g z %7g zp %7g c %7g\n", x[p], xp, y[p], yp, z[p
   for (int child = 0; child<8; child++){
    
     // if it has any particle, add to list
-    if (newchildren[child].np > 0){
+    if (newchildren[child]->np > 0){
 
-printf("Found new child, local index %d, global index %d, ptcl %d\n", child, lastcell, newchildren[child].np);
       // give child a unique index
-      int thischild_ind = lastcell;
-      lastcell += 1;
-      newchildren[child].cellindex = thischild_ind;
+      newchildren[child]->cellindex = lastcell;
 
       // copy child to cell array
-      cells[thischild_ind] = newchildren[child];
+      cells[lastcell] = newchildren[child];
 
       // tell parent what index its child has
-      parent.child[child] = thischild_ind;
+      parent->child[child] = lastcell;
 
       // tell particles what cell they belong to
-      for (int p = 0; p < cells[thischild_ind].np; p++){
-        partcell[p] = thischild_ind;
+      // do it here, when cell has obtained an index
+      for (int p = 0; p < cells[lastcell]->np; p++){
+        partcell[cells[lastcell]->particles[p]] = lastcell;
       }
 
 
-      if ( cells[thischild_ind].np > ncellpartmax ){
+      if ( cells[lastcell]->np > ncellpartmax ){
         // this child needs to be refined
-        nextlevel_refine[nnextlevel] = thischild_ind;
+        nextlevel_refine[nnextlevel] = lastcell;
         nnextlevel += 1;
       }
 
+      lastcell += 1;
 
     }
   }
 
 
-  
 
+
+  //-----------------
+  // CLEANUP
+  //-----------------
+  
+  free(newchildren);
+  
 
 
 

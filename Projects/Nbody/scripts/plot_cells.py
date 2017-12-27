@@ -2,6 +2,7 @@
 
 #========================================================
 # Plot the particles according to which cell they belong
+# Needs cellparticles.dat
 #========================================================
 
 
@@ -113,32 +114,34 @@ def plot3d(x, y, z, cells):
     tot = 0
     for i in range(ncells):
 
+
         xt = x[cell == i]
         yt = y[cell == i]
         zt = z[cell == i]
 
-        ax1.scatter(xt, yt, zt, depthshade=False, label='cell '+str(i))
+        if (xt.shape[0]>0):
+            ax1.scatter3D(xt, yt, zt, depthshade=False, label='cell '+str(i))
 
 
-    ax1.set_xlabel('x', 
-            labelpad=10, 
-            family='serif', 
+    ax1.set_xlabel('x',
+            labelpad=10,
+            family='serif',
             size=16)
 
-    ax1.set_ylabel('y', 
-            labelpad=10, 
-            family='serif', 
+    ax1.set_ylabel('y',
+            labelpad=10,
+            family='serif',
             size=16)
 
-    ax1.set_zlabel('z', 
-            labelpad=10, 
-            family='serif', 
+    ax1.set_zlabel('z',
+            labelpad=10,
+            family='serif',
             size=16)
 
 
 
     ax1.grid()
-    ax1.legend()
+    #  ax1.legend()
 
     ax1.set_xlim((-1,1))
     ax1.set_ylim((-1,1))
