@@ -2,7 +2,8 @@
 verbose = 1;
 direct_force = 0;
 multipole = 1;
-ncellpartmax = 1;
+ncellpartmax = 64;
+scale_cube = 1;
 
 
 // other stuff
