@@ -10,7 +10,6 @@ from os import getcwd, listdir
 from sys import argv
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 
 
@@ -100,27 +99,28 @@ def plot2d(x, y, z, cells):
     return 
 
 
-#===============================================
-def plot3d(ax1, x, y, z, cells, cellcentres):
-#===============================================
+#==============================
+def plot3d(x, y, z, cells):
+#==============================
 
+    from mpl_toolkits.mplot3d import Axes3D
     ncells = int(cell.max())+1
 
 
+    fig = plt.figure(facecolor = 'white', figsize = (10, 10))
+    ax1 = fig.add_subplot(1,1,1, aspect='equal', projection='3d')
 
 
     tot = 0
     for i in range(ncells):
 
-        if (cellcentres):
-            ax1.scatter3D(x, y, z, depthshade=True, label='centres', c='black')
-        else:
-            xt = x[cell == i]
-            yt = y[cell == i]
-            zt = z[cell == i]
 
-            if (xt.shape[0]>0):
-                ax1.scatter3D(xt, yt, zt, depthshade=True, label='cell '+str(i), s=5)
+        xt = x[cell == i]
+        yt = y[cell == i]
+        zt = z[cell == i]
+
+        if (xt.shape[0]>0):
+            ax1.scatter3D(xt, yt, zt, depthshade=True, label='cell '+str(i))
 
 
     ax1.set_xlabel('x',
@@ -148,7 +148,17 @@ def plot3d(ax1, x, y, z, cells, cellcentres):
     ax1.set_zlim((-1,1))
 
 
+    plt.tight_layout()
 
+
+    workdir= str(getcwd())
+    outputfilename = 'particles_by_cell_plot-3D'
+    fig_path = workdir+'/'+outputfilename+'.png'
+    print("saving particle cell plot as "+fig_path)
+    plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )
+    print("Done")
+
+    plt.close()
 
 
     return 
@@ -160,16 +170,9 @@ if __name__=="__main__":
 #=========================
 
 
-    if (len(argv) != 3):
-        print("Expecting exactly 2 arguments: \nthe output file of which cell each particle belongs to \nand cell centres.")
+    if (len(argv) != 2):
+        print("Expecting exactly 1 argument: the output file.")
         quit()
-
-
-
-
-    #===================================
-    # Get and plot particles by cell
-    #===================================
 
     filename = argv[1]
 
@@ -178,50 +181,7 @@ if __name__=="__main__":
     ncells = int(cell.max())+1
     print("Found", ncells, "cells")
 
-
-
-    fig = plt.figure(facecolor = 'white', figsize = (10, 10))
-    ax1 = fig.add_subplot(1,1,1, aspect='equal', projection='3d')
-
-
-    plot3d(ax1, x, y, z, cell, cellcentres=False)
-
-
-
-
-    #===================================
-    # Get and plot cell centres
-    #===================================
-
-    filename = argv[2]
-
-    x, y, z = np.loadtxt(filename, skiprows=1, usecols=([0, 1, 2]), unpack=True)
-    cell = np.loadtxt(filename, skiprows=1, dtype='int', usecols=([3])) 
-    ncells = int(cell.max())+1
-
-    plot3d(ax1, x, y, z, cell, cellcentres=True)
-
-    #  plt.show()
-
-
-
-
-
-    #============================
-    # Finish up
-    #============================
-
-    plt.tight_layout()
-
-    workdir= str(getcwd())
-    outputfilename = 'cell_plot-3D'
-    fig_path = workdir+'/'+outputfilename+'.png'
-    print("saving particle cell plot as "+fig_path)
-    plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )
-    print("Done")
-
-    plt.close()
-
-
+    plot2d(x, y, z, cell)
+    plot3d(x, y, z, cell)
 
 

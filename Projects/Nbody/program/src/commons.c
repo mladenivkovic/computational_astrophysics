@@ -37,7 +37,7 @@ unsigned int ncellmax = 0;
 int ncellpartmax = 0;
 double boxlen = 0;
 int max_refinement_level = 1;
-
+int scale_cube = 0;
 
 // units
 double scale_m = 0;

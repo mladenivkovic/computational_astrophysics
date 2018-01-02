@@ -34,7 +34,7 @@ extern int ncellpartmax;      // maximal number of particles per cell (refinemen
 extern double boxlen;
 
 extern int max_refinement_level;
-
+extern int scale_cube;
 
 
 // units

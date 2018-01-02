@@ -39,8 +39,7 @@ int to_refine = 1;
 
 void build_root();
 void refine(node * parentnode);
-
-
+void calculate_multipole(int index);
 
 
 
@@ -66,8 +65,7 @@ void build_tree(){
   // allocate cells array
   cells = malloc(ncellmax * sizeof(node*));
   
-  // set boxlen = 2*rmax
-  boxlen = 2 ;
+
 
 
 
@@ -91,13 +89,20 @@ void build_tree(){
     levelcounter += 1;
     to_refine = 0;
 
-  if (verbose) {printf("Refining level %3d -> %3d: %5d cells to refine, ", levelcounter, levelcounter+1, nthislevel); }
+// for (int i = 0; i<nthislevel; i++){
+//   printf("Child%5d has %5d particles\n", thislevel_refine[i], cells[thislevel_refine[i]]->np);
+// }
+// printf("\n");
+    if (verbose) {printf("Refining level %3d -> %3d: %5d cells to refine, ", levelcounter, levelcounter+1, nthislevel); }
 
     for (int n = 0; n < nthislevel; n++){
       refine(cells[thislevel_refine[n]]);
     }
 
-  if (verbose) { printf("%5d children need refinement\n", nnextlevel); }
+    if (verbose) { 
+      printf("%5d children need refinement. Ncells = %d\n", nnextlevel, lastcell); 
+    }
+
 
 
     // check whether another step is necessary
@@ -121,7 +126,7 @@ void build_tree(){
       nnextlevel = 0;
     }
 
-  }
+  } //while
 
 
 
@@ -134,28 +139,21 @@ void build_tree(){
 
 
 
-// write to file
-FILE *outfilep = fopen("cellcentres.dat", "w");
+  // write to file
+  FILE *outfilep = fopen("cellcentres.dat", "w");
 
 
 
-fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
-for (unsigned int i = 0; i<lastcell; i++){
-  node *cell = cells[i];
-  double xc = cell->center[0];
-  double yc = cell->center[1];
-  double zc = cell->center[2];
+  fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
+  for (unsigned int i = 8; i<lastcell; i++){
+    node *cell = cells[i];
+    double xc = cell->center[0];
+    double yc = cell->center[1];
+    double zc = cell->center[2];
 
-  fprintf(outfilep, "%15g   %15g   %15g   %15d \n", xc, yc, zc, i );
-}
-
-
-fclose(outfilep);
-
-
-
-
-
+    fprintf(outfilep, "%15g   %15g   %15g   %15d \n", xc, yc, zc, i );
+  }
+  fclose(outfilep);
 
 
 }
@@ -190,10 +188,20 @@ void build_root()
 
 
 
+  // assuming simulation is centered around origin
   double c = boxlen/4;
   
   // centres for level one:
-  double cs[8][3] = { {-c, -c, -c}, {c, -c, -c}, {-c, c, -c}, {c, c, -c}, {-c, -c, c}, {c, -c, c}, {-c, c, c}, {c, c, c} };
+  double cs[8][3] = { 
+    {-c, -c, -c}, 
+    {c, -c, -c}, 
+    {-c, c, -c}, 
+    {c, c, -c}, 
+    {-c, -c, c}, 
+    {c, -c, c}, 
+    {-c, c, c}, 
+    {c, c, c} 
+  };
 
 
   // refinement steps array initialisation
@@ -216,6 +224,9 @@ void build_root()
     for (int j = 0; j<3; j++) { thiscenter[j] = cs[i][j]; }
 
     int *parray = malloc(npart * sizeof(int));
+    double *com = calloc(3, sizeof(double));
+    double *dip = calloc(3, sizeof(double));
+    double *quad = calloc(9, sizeof(double));
 
     node *root = malloc(sizeof(node));
 
@@ -226,6 +237,10 @@ void build_root()
     root->center = thiscenter;
     root->np = 0;
     root->particles = parray;
+    root->centre_of_mass = com;
+    root->mass = 0;
+    root->dipole = dip;
+    root->quadrupole = quad;
 
 
     cells[i] = root;
@@ -253,9 +268,9 @@ void build_root()
     i = 0;
     j = 0;
     k = 0;
-    if (x[p] > 0){ i = 1; }
-    if (y[p] > 0){ j = 1; }
-    if (z[p] > 0){ k = 1; }
+    if (x[p] >= 0){ i = 1; }
+    if (y[p] >= 0){ j = 1; }
+    if (z[p] >= 0){ k = 1; }
 
     ind = i + 2*j + 4*k;
 
@@ -280,7 +295,6 @@ void build_root()
   }
 
 
-
 }
 
 
@@ -301,7 +315,7 @@ void refine(node * parent)
 {
   
 
-  // if (verbose) {printf("Refining cell %d of level %d with npart %d\n", parent->cellindex, parent->level, parent->np);}
+// if (verbose) {printf("Refining cell %d of level %d\n", parent->cellindex, parent->level);}
 
 
 
@@ -325,12 +339,20 @@ void refine(node * parent)
     max_refinement_level = childlevel; 
   }
 
-  
+
   // centres for child level:
-  double c = boxlen/pow(2, childlevel+1);
+  double c = boxlen/pow(2.0, (float) (childlevel+1));
 
-
-  double cs[8][3] = { {xp-c, yp-c, zp-c}, {xp+c, yp-c, zp-c}, {xp-c, yp+c, zp-c}, {xp+c, yp+c, zp-c}, {xp-c, yp-c, zp+c}, {xp+c, yp+-c, zp+c}, {xp-c, yp+c, zp+c}, {xp+c, yp+c, zp+c} };
+  double cs[8][3] = { 
+    {xp-c, yp-c, zp-c}, 
+    {xp+c, yp-c, zp-c}, 
+    {xp-c, yp+c, zp-c}, 
+    {xp+c, yp+c, zp-c}, 
+    {xp-c, yp-c, zp+c}, 
+    {xp+c, yp-c, zp+c}, 
+    {xp-c, yp+c, zp+c}, 
+    {xp+c, yp+c, zp+c} 
+  };
 
   
 
@@ -351,6 +373,9 @@ void refine(node * parent)
     for (int j = 0; j<3; j++) { thiscenter[j] = cs[i][j]; }
 
     int *parray = malloc(npart * sizeof(int));
+    double *com = calloc(3, sizeof(double));
+    double *dip = calloc(3, sizeof(double));
+    double *quad = calloc(9, sizeof(double));
 
     node *thischild = malloc(sizeof(node));
 
@@ -362,6 +387,11 @@ void refine(node * parent)
     thischild->center = thiscenter;
     thischild->np = 0;
     thischild->particles = parray;
+    thischild->centre_of_mass = com;
+    thischild->mass = 0;
+    thischild->dipole = dip;
+    thischild->quadrupole = quad;
+
 
     newchildren[i] = thischild;
   }
@@ -388,9 +418,9 @@ void refine(node * parent)
     i = 0;
     j = 0;
     k = 0;
-    if (x[thispart] > xp){ i = 1; }
-    if (y[thispart] > yp){ j = 1; }
-    if (z[thispart] > zp){ k = 1; }
+    if (x[thispart] >= xp){ i = 1; }
+    if (y[thispart] >= yp){ j = 1; }
+    if (z[thispart] >= zp){ k = 1; }
     ind = i + 2*j + 4*k;
 
     thischild = newchildren[ind];
@@ -413,7 +443,6 @@ void refine(node * parent)
    
     // if it has any particle, add to list
     if (newchildren[child]->np > 0){
-
       // give child a unique index
       newchildren[child]->cellindex = lastcell;
 
@@ -451,7 +480,103 @@ void refine(node * parent)
   free(newchildren);
   
 
+}
 
 
+
+
+//============================
+void get_multipoles()
+//============================
+{
+
+  //=============================================
+  // Calculate multipole moments for every cell
+  //=============================================
+  
+
+  // loop over root
+  for (int i = 0; i<8; i++){
+    calculate_multipole(i);
+  }
+
+}
+
+
+
+
+
+
+//=====================================
+void calculate_multipole(int index)
+//=====================================
+{
+ 
+
+  //==================================================
+  // This function calculates all necessary parts for
+  // the multipoles.
+  //==================================================
+  
+  node * thiscell = cells[index];
+
+
+  // loop over children recursively
+
+  int isleaf = 1; // assume this cell is leaf
+
+  for (int i = 0; i < 8; i++){
+
+    // if there is a child:
+    if (thiscell->child[i] > 0){
+      isleaf = 0; // cell has children, is not leaf
+      calculate_multipole(thiscell->child[i]);
+    }
+  }
+
+
+
+
+  int thispart = 0;
+  double com[] = {0,0,0};
+
+  if (isleaf){
+    // get centre of mass
+    for (int p = 0; p < thiscell->np; p++){
+      thispart = thiscell->particles[p];
+      com[0]+=m[thispart]*x[thispart];
+      com[1]+=m[thispart]*y[thispart];
+      com[2]+=m[thispart]*z[thispart];
+      thiscell->mass += m[thispart];
+    }
+
+    for (int i = 0; i<3; i++){
+      thiscell->centre_of_mass[i] = com[i];
+    }
+  }
+
+  
+  // pass centre of mass data to parent, if parent exists
+  if (thiscell->parent >= 0) {
+    node * parent = cells[thiscell->parent];
+    parent->mass += thiscell->mass;
+    for (int i = 0; i<3; i++){
+      parent->centre_of_mass[i] += thiscell->centre_of_mass[i];
+    }
+  }
+  
+
+  // now do actual calculations
+  for (int i = 0; i<3; i++){
+    thiscell->centre_of_mass[i] /= thiscell->mass;
+  }
+
+
+
+
+  
+
+
+  
 
 }

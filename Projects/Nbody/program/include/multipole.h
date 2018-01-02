@@ -26,6 +26,13 @@ typedef struct {
   int np; // number of particles
   int * particles; // list of particle indices
 
+  // multipole expansion stuff
+  double * centre_of_mass;
+  double mass;
+  double * dipole;
+  double * quadrupole;
+
+
 } node;
 
 
@@ -45,8 +52,14 @@ extern int nnextlevel;
 extern int to_refine; // whether there is a next level to refine
 
 
+
+
+
+
+
 //======================
 // Functions
 //======================
 
 extern void build_tree();
+extern void get_multipoles();

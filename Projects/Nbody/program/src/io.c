@@ -89,6 +89,9 @@ void readparams(int argc, char *argv[])
       else if (strcmp(varname, "ncellpartmax")==0){
         ncellpartmax = atoi(varvalue);
       }
+      else if (strcmp(varname, "scale_cube")==0){
+        scale_cube = atoi(varvalue);
+      }
       else if (strcmp(varname, "//")==0) {
         // ignore comments
         continue;

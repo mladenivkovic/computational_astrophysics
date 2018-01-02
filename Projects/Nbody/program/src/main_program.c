@@ -55,7 +55,16 @@ int main(int argc, char *argv[])
   if (multipole) {
     if (verbose) {printf("Started multipole force calculation.\n");}
     build_tree();
+    get_multipoles();
     write_cellparticles();
+
+    double totmass = 0;
+    for (int i = 0; i<8; i++){
+      printf("Root cell %d has mass: %g\n", i, cells[i]->mass);
+      totmass += cells[i]->mass;
+    }
+    printf("Total mass found recursively is: %g\n", totmass);
+
   }
 
   // write run info
@@ -216,20 +225,41 @@ void get_scales()
   
   double rmax=0;
 
-  for (int i = 0; i<npart; i++)
-  {
 
-    r[i] = sqrt( pow(x[i], 2) + pow(y[i], 2) + pow(z[i], 2));
-    
-    if (r[i]>rmax)
+  if (scale_cube){
+    for (int i = 0; i<npart; i++)
     {
-      rmax = r[i];
+      r[i] = sqrt( pow(x[i], 2) + pow(y[i], 2) + pow(z[i], 2));
+      
+      if (fabs(x[i])>rmax)
+      {
+        rmax = fabs(x[i]);
+      }
     }
+  }
+  else {
+    for (int i = 0; i<npart; i++)
+    {
 
+      r[i] = sqrt( pow(x[i], 2) + pow(y[i], 2) + pow(z[i], 2));
+      
+      if (r[i]>rmax)
+      {
+        rmax = r[i];
+      }
+
+    }
   }
 
   scale_l = rmax;
 
+  // set boxlen
+  if (scale_cube){
+    boxlen = 2;
+  }
+  else{
+    boxlen = 2*rmax ;
+  }
 
 
 
