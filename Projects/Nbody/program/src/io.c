@@ -89,8 +89,14 @@ void readparams(int argc, char *argv[])
       else if (strcmp(varname, "ncellpartmax")==0){
         ncellpartmax = atoi(varvalue);
       }
+      else if (strcmp(varname, "theta_max")==0){
+        theta_max = atof(varvalue);
+      }
       else if (strcmp(varname, "scale_cube")==0){
         scale_cube = atoi(varvalue);
+      }
+      else if (strcmp(varname, "multipole_order")==0){
+        multipole_order = atoi(varvalue);
       }
       else if (strcmp(varname, "//")==0) {
         // ignore comments
@@ -206,33 +212,69 @@ void readdata(char *argv[])
 
 
 
-//============================
-void output_direct_force()
-//============================
+//==================================
+void write_output(int output_case)
+//==================================
 {
 
-  //-------------------------------------
+  //----------------------------------------
   // Writes direct forces results to file.
-  //-------------------------------------
- 
-  if(verbose){ printf("Writing direct forces to file.\n"); }
+  // Cases:
+  //    1: direct force output
+  //    2: multipole force output
+  //----------------------------------------
 
+
+
+  //---------------------
   // get filename
-  char filename[80] = "output_direct_force_"; 
-  char softening_str[10];
-  sprintf(softening_str, "%.4g", f_softening);
-  strcat(filename, softening_str);
-  strcat(filename, ".dat");
+  //---------------------
+
+  char filename[80] = "output_"; 
+
+  if (output_case == 1) {
+    
+    // direct force output
+    if(verbose){ printf("Writing direct forces to file.\n"); }
+
+    strcat(filename, "direct_force_");
+    char softening_str[10];
+    sprintf(softening_str, "%.4g", f_softening);
+    strcat(filename, softening_str);
+    strcat(filename, ".dat");
+  }
+  else if (output_case == 2){
+    if(verbose){ printf("Writing multipole forces to file.\n"); }
+
+
+    // get filename
+    strcat(filename, "multipole_");
+    char multipole_str[10];
+    char thetamax_str[10];
+    sprintf(multipole_str, "%1d", multipole_order);
+    sprintf(thetamax_str, "%3g", theta_max);
+    strcat(filename, multipole_str);
+    strcat(filename, "-");
+    strcat(filename, thetamax_str);
+    strcat(filename, ".dat");
+  }
+  else{
+    printf("Something went wrong with output. Got case=%d, which I dont recognise.\n", output_case);
+    return;
+  }
 
 
 
 
-  // write to file
+  //-----------------------
+  // write output to file
+  //-----------------------
+  
   FILE *outfilep = fopen(filename, "w");
 
   fprintf(outfilep, "%15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s\n", "x ", "y ", "z ", "r ", "m ", "fx", "fy", "fz", "ftot");
   for (int i = 0; i<npart; i++){
-    fprintf(outfilep, "%15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g\n", x[i], y[i], z[i], r[i], m[i], fx[i], fy[i], fz[i], sqrt(pow(fx[i],2) + pow(fy[i], 2) + pow(fz[i], 2) ) );
+    fprintf(outfilep, "%15.7g   %15.7g   %15.7g   %15.7g   %15.7g   %15.7g   %15.7g   %15.7g   %15.7g\n", x[i], y[i], z[i], r[i], m[i], fx[i], fy[i], fz[i], sqrt(pow(fx[i],2) + pow(fy[i], 2) + pow(fz[i], 2) ) );
   }
 
   fclose(outfilep);
@@ -245,41 +287,6 @@ void output_direct_force()
 
 
 
-
-
-//============================
-void output_multipole()
-//============================
-{
-
-  //-------------------------------------
-  // Writes direct forces results to file.
-  //-------------------------------------
- 
-  if(verbose){ printf("Writing multipole forces to file.\n"); }
-
-
-  // get filename
-  char filename[80] = "output_multipole_"; 
-  char multipole_str[10];
-  sprintf(multipole_str, "%.4g", 0.0);
-  strcat(filename, multipole_str);
-  strcat(filename, ".dat");
-
-
-
-
-  // write to file
-  FILE *outfilep = fopen(filename, "w");
-
-  fprintf(outfilep, "%15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s\n", "x ", "y ", "z ", "r ", "m ", "fx", "fy", "fz", "ftot");
-  for (int i = 0; i<npart; i++){
-    fprintf(outfilep, "%15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g\n", x[i], y[i], z[i], r[i], m[i], fx[i], fy[i], fz[i], sqrt(pow(fx[i],2) + pow(fy[i], 2) + pow(fz[i], 2) ) );
-  }
-
-  fclose(outfilep);
-
-}
 
 
 

@@ -29,6 +29,7 @@ int nnextlevel = 0;
 
 int to_refine = 1;
 
+int multipole_order = 2;
 
 
 
@@ -689,8 +690,6 @@ void calculate_multipole_forces(int index)
     }
     
   }
-
-
 }
 
 
@@ -818,11 +817,17 @@ double theta(double y, node * source)
   // Calculate approximate angle of source wrt target 
   //===================================================
   
- double theta = source->diagonal / y;
- return (theta);
-
-
+  double theta = source->diagonal / y;
+  return (theta);
 }
+
+
+
+
+
+
+
+
 
 
 //===================================================================
@@ -851,22 +856,66 @@ void calc_multipole(double y[3], node * target, node * source)
   double force[3] = {0, 0, 0};
 
   
-  // calc monopole
+  //-------------------
+  // calc monopole 
+  //-------------------
   for (int j = 0; j<3; j++){
     force[j] -= y[j]/absy_cube;
   }
 
 
+  if (multipole_order > 0){
+    //-------------------
+    // calc dipole
+    //-------------------
+    double scalar_product = 0;
+    for (int i = 0; i<3; i++){
+      scalar_product += y[i] * source->multip_vector[i];
+    }
+    for (int j = 0; j <3; j++){
+      force[j] += source->multip_vector[j]/absy_cube - 3.0* scalar_product / absy_five * y[j];
+    }
+  }
+
+
+  if (multipole_order > 1){
+    //-------------------
+    // Calc quadrupole
+    //-------------------
+    double sum1[3] = {0, 0, 0}; 
+    double sum2 = 0;
+
+    for (int j = 0; j<3; j++){
+      for (int k = 0; k<3; k++){
+        sum1[j] += 3*source->multip_matrix[k][j]*y[k];
+      }
+      sum2 += y[j]*sum1[j];
+    }
+
+    for (int j = 0; j<3; j++){
+      force[j] += (sum1[j] - (source->multip_sq)*y[j])/absy_five - 
+          2.5 * (sum2 - absy_sq*(source->multip_sq)) / absy_seven * y[j];
+    }
+    
+
+
+  }
 
 
 
+
+
+  //--------------------------------------
   // multiply by sum mass in the end
+  //--------------------------------------
   for (int j = 0; j<3; j++){
     force[j] *= source->mass * m[target->particles[0]]; 
   }
 
   
+  //--------------------------------------
   // apply calculated force to particles
+  //--------------------------------------
   int pind;
   for (int p = 0; p<target->np; p++){
     pind = target->particles[p];

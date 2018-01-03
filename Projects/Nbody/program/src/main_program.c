@@ -7,6 +7,7 @@
 #include <stdio.h>         
 #include <stdlib.h>
 #include <math.h>
+#include <omp.h>
 #include "commons.h"
 #include "io.h"
 #include "direct_forces.h"
@@ -51,8 +52,23 @@ int main(int argc, char *argv[])
   if (direct_force) {
     if (verbose) {printf("Started direct force calculation.\n");}
     get_direct_force();
-    output_direct_force();
+    write_output(1);
+
+    if (multipole){
+      // clean up forces
+      for (int i = 0; i < npart; i++){
+        fx[i] = 0;
+        fy[i] = 0;
+        fz[i] = 0;
+      }
+    }
   }
+
+
+
+
+
+
 
 
   //--------------------------
@@ -63,17 +79,30 @@ int main(int argc, char *argv[])
     build_tree();
     
     // Calculate multipole stuff
-    for (int i = 0; i<8; i++){
-      get_multipole(i);
+#pragma omp parallel
+    {
+#pragma omp master 
+      { printf("Entered parallel region.\nCalculating multipoles.\n"); }
+
+#pragma omp for
+      for (int i = 0; i<8; i++){
+        get_multipole(i);
+      }
+#pragma omp master 
+      { printf("Calculating multipole forces.\n");
+      printf("Using multipole order %d\n", multipole_order); }
+
+#pragma omp for
+      // calculate actual forces
+      for (int i = 0; i<8; i++){
+        calculate_multipole_forces(i);
+      }
     }
 
-    // calculate actual forces
-    for (int i = 0; i<8; i++){
-      calculate_multipole_forces(i);
-    }
 
-    write_cellparticles();
-    output_multipole();
+    // write_cellparticles();
+
+    write_output(2);
     // check_root();
   }
 
@@ -88,11 +117,9 @@ int main(int argc, char *argv[])
 
 
 
-  if (verbose)
-  {
-    printf("I'm finished!\n");
-  }
+  if (verbose) { printf("I'm finished!\n"); }
   return(0);
+
 }
 
 

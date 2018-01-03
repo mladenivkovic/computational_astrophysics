@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 
 #==========================
-def read_commons(f_soft):
+def read_commons(datafile):
 #==========================
 
     """ 
@@ -27,7 +27,7 @@ def read_commons(f_soft):
     reads in the data from given file.
 
     PARAMETERS:
-        filename:   string of filename
+        datafile:   string of filename
 
 
     RETURNS:
@@ -45,7 +45,6 @@ def read_commons(f_soft):
     # Read in data
     #===============
 
-    datafile = "output_direct_force_"+f_soft+".dat"
     radius, mass = np.loadtxt(datafile, skiprows=1, usecols=([3, 4]), unpack=True)
 
 
@@ -168,7 +167,7 @@ def get_average_force(inds, ppb, datafile):
     """
 
    
-    print("Computing average force for ", s)
+    print("Computing average force ")
 
 
     force = np.loadtxt(datafile, skiprows=1, usecols=([8]), unpack=True)
@@ -234,33 +233,22 @@ if __name__=="__main__":
 
     files=listdir()
 
-    softenings = []
     orders = []
 
     for name in files:
-        if name[:20] == "output_direct_force_":
-            softening = name
-            softening = softening.replace("output_direct_force_", "")
-            softening = softening.replace(".dat","")
-            softenings.append(softening)
-        
         if name[:17] == "output_multipole_":
             order = name
             order = order.replace("output_multipole_", "")
             order = order.replace(".dat", "")
+            order, minus, thetamax = order.partition("-")
             orders.append(order)
 
 
-    if (len(softenings)<1):
-        print("No softenings found. Are you in the right directory?")
-        quit()
     if (len(orders)<1):
         print("No multipole orders found. Are you in the right directory?")
         quit()
 
 
-    softenings.sort(key=float)
-    print("found data for softenings:", softenings)
 
     orders.sort(key=float)
     print("found data for multipole orders:", orders)
@@ -275,9 +263,10 @@ if __name__=="__main__":
     #--------------------------------------
 
 
-    f_soft = softenings[0] #pick one
+    order = orders[0] #pick one
 
-    radius, mass = read_commons(f_soft)
+    datafile = "output_multipole_"+order+"-"+str(thetamax)+".dat"
+    radius, mass = read_commons(datafile)
 
     nbins = 200
     inds, bins, cum_mass, ppb = bin_particles(radius, mass)
@@ -300,26 +289,30 @@ if __name__=="__main__":
 
     #----------------------------------
     # Calculate and plot average force
-    # for various softenings
+    # for analytical solution
+    #----------------------------------
+   
+    analytical_solution = analytical_average_force(bins[:-1], bins[1:], a, cum_mass[-1], mass[0])
+
+    print("Plotting analytical solution")
+    ax1.plot(bins[1:], analytical_solution,
+            label='analytical average')
+
+
+
+
+
+    #----------------------------------
+    # Calculate and plot average force
+    # for various multipoles
     #----------------------------------
 
-
-    for s in softenings:
-
-        datafile = "output_direct_force_"+s+".dat"
-        av_force = get_average_force(inds, ppb, datafile)
-
-        print("Plotting alpha =", s)
-        ax1.plot(bins, av_force,
-                marker='o',
-                linestyle='-',
-                markersize=3,
-                label=(r'$\alpha = $ ' + s))
 
 
     for o in orders:
 
-        datafile = "output_multipole_"+o+".dat"
+        datafile = "output_multipole_"+o+"-"+str(thetamax)+".dat"
+        print("Averaging and plotting ", datafile)
         av_force = get_average_force(inds, ppb, datafile)
 
         print("Plotting order =", o)
@@ -333,18 +326,6 @@ if __name__=="__main__":
 
 
 
-    #----------------------------------
-    # Calculate and plot average force
-    # for analytical solution
-    #----------------------------------
-   
-    analytical_solution = analytical_average_force(bins[:-1], bins[1:], a, cum_mass[-1], mass[0])
-
-    print("Plotting analytical solution")
-    ax1.plot(bins[1:], analytical_solution,
-            label='analytical average')
-
-
 
 
     #-------------------------
@@ -354,8 +335,7 @@ if __name__=="__main__":
     ax1.legend()
     ax1.set_xscale('log')
     ax1.set_yscale('log')
-    ax1.set_xlabel(r'$r$',
-            #r'$r$ $[r_{max}=1]$', 
+    ax1.set_xlabel(r'$r$ $[r_{max}=1]$', 
             labelpad=10, 
             family='serif', 
             size=16)
@@ -364,17 +344,18 @@ if __name__=="__main__":
             family='serif', 
             size=16)
 
-    ax1.set_title(r'average force profile for varying softening', 
+    thetamax = thetamax.strip()
+    ax1.set_title(r'average force profile for multipole method with $\theta =$'+str(thetamax), 
             family='serif', 
             size=18)
     
     ax1.grid()
 
+
     plt.tight_layout()
 
     
     plt.figtext(.02, .03, str(bins.shape[0]-1)+' bins used', family='serif', size=12)
-    plt.figtext(.02, .01, r'$\epsilon = \alpha \cdot$ mean interparticle distance', family='serif', size=12)
 
 
     #-------------------
@@ -383,7 +364,7 @@ if __name__=="__main__":
 
 
     workdir= str(getcwd())
-    outputfilename = 'compare_direct_multipole'
+    outputfilename = 'multipole_forces_plot-'+str(thetamax)
     fig_path = workdir+'/'+outputfilename+'.png'
     print("saving average force profile plot as "+fig_path)
     plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )

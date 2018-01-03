@@ -52,7 +52,7 @@ extern int * nextlevel_refine; // cells to refine on next level
 extern int nthislevel;
 extern int nnextlevel;
 extern int to_refine; // whether there is a next level to refine
-
+extern int multipole_order; // up to which multipole order to use
 
 
 

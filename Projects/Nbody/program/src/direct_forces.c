@@ -52,16 +52,20 @@ void get_direct_force()
 #pragma omp for     
     for (int i = 0; i < npart; i++)
     {
-      for (int j = 0; j < npart; j++)
+      for (int j = i+1; j < npart; j++)
       {
-        if (!(i == j))
-        {
-          rsq = pow(x[i]-x[j], 2) + pow(y[i]-y[j], 2) + pow(z[i]-z[j], 2);
-          force_fact = - m[i]*m[j] / pow(rsq + pow(softening, 2), 1.5);
-          fx[i] += force_fact * (x[i]-x[j]);
-          fy[i] += force_fact * (y[i]-y[j]);
-          fz[i] += force_fact * (z[i]-z[j]);
-        }
+        double dx = x[i]-x[j];
+        double dy = y[i]-y[j];
+        double dz = z[i]-z[j];
+
+        rsq = pow(dx, 2) + pow(dy, 2) + pow(dz, 2);
+        force_fact = - m[i]*m[j] / pow(rsq + pow(softening, 2), 1.5);
+        fx[i] += force_fact * dx;
+        fy[i] += force_fact * dy;
+        fz[i] += force_fact * dz;
+        fx[j] += force_fact * (-dx);
+        fy[j] += force_fact * (-dy);
+        fz[j] += force_fact * (-dz);
       }
     }
 

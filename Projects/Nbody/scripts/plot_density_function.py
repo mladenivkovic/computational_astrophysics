@@ -190,8 +190,9 @@ def get_profiles(x, y, z, mass):
     # calculate radius from origin
     r = np.sqrt(x**2 + y**2 + z**2)
 
-    # norm r
-    # r = r / r.max()
+    # norm r and m
+    r = r / r.max()
+    mass = mass/sum(mass)*1e6
 
 
     nbins = 200
@@ -376,7 +377,7 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     ax3.tick_params(axis='both', which='major', labelsize=12, top=5)
 
     #label axes
-    ax1.set_xlabel(r'r', 
+    ax1.set_xlabel(r'$r$ $[r_{max} = 1]$', 
             labelpad=10, 
             family='serif', 
             size=16)
@@ -384,19 +385,19 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
             labelpad=10, 
             family='serif', 
             size=16)
-    ax2.set_xlabel(r'r', 
+    ax2.set_xlabel(r'$r$ $[r_{max} = 1]$', 
             labelpad=10, 
             family='serif', 
             size=16)
-    ax2.set_ylabel(r'mass', 
+    ax2.set_ylabel(r'mass $[M_{tot}=10^6]$', 
             labelpad=10, 
             family='serif', 
             size=16)
-    ax3.set_xlabel(r'r', 
+    ax3.set_xlabel(r'$r$ $[r_{max} = 1]$', 
             labelpad=10, 
             family='serif', 
             size=16)
-    ax3.set_ylabel(r'cumulative mass', 
+    ax3.set_ylabel(r'cumulative mass $[M_{tot}=10^6]$', 
             labelpad=10, 
             family='serif', 
             size=16)
@@ -422,7 +423,9 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     ax3.set_xscale('log')
 
     # set axis limits
-    ax1.set_ylim([1e-7, 1e15])
+    #  ax1.set_ylim([1e-2, 1e18])
+    #  ax2.set_ylim([1e-3, 1e2])
+    #  ax2.set_ylim([1e-3, 1e2])
 
 
     # grid
