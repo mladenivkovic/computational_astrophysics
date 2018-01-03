@@ -28,9 +28,11 @@ typedef struct {
 
   // multipole expansion stuff
   double * centre_of_mass;
+  double diagonal;
   double mass;
-  double * dipole;
-  double * quadrupole;
+  double * multip_vector;
+  double ** multip_matrix;
+  double multip_sq;
 
 
 } node;
@@ -62,4 +64,5 @@ extern int to_refine; // whether there is a next level to refine
 //======================
 
 extern void build_tree();
-extern void get_multipoles();
+extern void get_multipole(int index);
+extern void calculate_multipole_forces(int index);

@@ -33,8 +33,9 @@ extern unsigned int ncellmax; // maximal number of cells
 extern int ncellpartmax;      // maximal number of particles per cell (refinement criterion)
 extern double boxlen;
 
-extern int max_refinement_level;
-extern int scale_cube;
+extern int max_refinement_level;    // stores maximal refinement level achieved
+extern int scale_cube;              // whether to use scaling for cube tests
+extern double theta_max;            // distance/angle condition for multipole validity
 
 
 // units

@@ -39,9 +39,10 @@ int to_refine = 1;
 
 void build_root();
 void refine(node * parentnode);
-void calculate_multipole(int index);
-
-
+void calc_direct(int *list1, int len1, int *list2, int len2);
+void walk_tree(node * target, node * source);
+double theta(double y, node * source);
+void calc_multipole(double y[3], node * target, node * source);
 
 
 
@@ -78,6 +79,11 @@ void build_tree(){
 
 
 
+
+
+
+
+
   //------------------
   // Start refinement
   //------------------
@@ -89,10 +95,10 @@ void build_tree(){
     levelcounter += 1;
     to_refine = 0;
 
-// for (int i = 0; i<nthislevel; i++){
-//   printf("Child%5d has %5d particles\n", thislevel_refine[i], cells[thislevel_refine[i]]->np);
-// }
-// printf("\n");
+  // for (int i = 0; i<nthislevel; i++){
+  //   printf("Child%5d has %5d particles\n", thislevel_refine[i], cells[thislevel_refine[i]]->np);
+  // }
+  // printf("\n");
     if (verbose) {printf("Refining level %3d -> %3d: %5d cells to refine, ", levelcounter, levelcounter+1, nthislevel); }
 
     for (int n = 0; n < nthislevel; n++){
@@ -130,7 +136,13 @@ void build_tree(){
 
 
 
+
+
+
+  //--------------
   // cleanup
+  //--------------
+  
   free(thislevel_refine);
   free(nextlevel_refine);
 
@@ -139,23 +151,23 @@ void build_tree(){
 
 
 
-  // write to file
-  FILE *outfilep = fopen("cellcentres.dat", "w");
-
-
-
-  fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
-  for (unsigned int i = 8; i<lastcell; i++){
-    node *cell = cells[i];
-    double xc = cell->center[0];
-    double yc = cell->center[1];
-    double zc = cell->center[2];
-
-    fprintf(outfilep, "%15g   %15g   %15g   %15d \n", xc, yc, zc, i );
-  }
-  fclose(outfilep);
-
-
+  // // write to file
+  // FILE *outfilep = fopen("cellcentres.dat", "w");
+  //
+  //
+  //
+  // fprintf(outfilep, "%15s   %15s   %15s   %15s  \n", "x ", "y ", "z ", "cell ");
+  // for (unsigned int i = 0; i<lastcell; i++){
+  //   node *cell = cells[i];
+  //   double xc = cell->center[0];
+  //   double yc = cell->center[1];
+  //   double zc = cell->center[2];
+  //
+  //   fprintf(outfilep, "%15g   %15g   %15g   %15d \n", xc, yc, zc, i );
+  // }
+  // fclose(outfilep);
+  //
+  //
 }
 
 
@@ -223,10 +235,14 @@ void build_root()
     double *thiscenter = malloc(3*sizeof(double));
     for (int j = 0; j<3; j++) { thiscenter[j] = cs[i][j]; }
 
-    int *parray = malloc(npart * sizeof(int));
-    double *com = calloc(3, sizeof(double));
-    double *dip = calloc(3, sizeof(double));
-    double *quad = calloc(9, sizeof(double));
+    // generate empty matrix
+    double ** matrix = malloc(3*sizeof(double*));
+    for (int j = 0; j<3; j++){
+      double * column = calloc(3 , sizeof(double));
+      matrix[j] = column;
+    }
+
+
 
     node *root = malloc(sizeof(node));
 
@@ -236,11 +252,13 @@ void build_root()
     root->child = nochild;
     root->center = thiscenter;
     root->np = 0;
-    root->particles = parray;
-    root->centre_of_mass = com;
+    root->particles = malloc(npart * sizeof(int));
+    root->centre_of_mass = calloc(3, sizeof(double));
+    root->diagonal = boxlen*sqrt(3);
     root->mass = 0;
-    root->dipole = dip;
-    root->quadrupole = quad;
+    root->multip_vector = calloc(3, sizeof(double));
+    root->multip_matrix = matrix;
+    root->multip_sq = 0;
 
 
     cells[i] = root;
@@ -313,10 +331,13 @@ void build_root()
 void refine(node * parent)
 //===========================
 {
+
+  //==============================================
+  // Refine a parent node into up to 8 children,
+  // that contain at least 1 particle
+  //==============================================
   
-
-// if (verbose) {printf("Refining cell %d of level %d\n", parent->cellindex, parent->level);}
-
+  // if (verbose) {printf("Refining cell %d of level %d\n", parent->cellindex, parent->level);}
 
 
   //---------------------
@@ -372,13 +393,17 @@ void refine(node * parent)
     double *thiscenter = malloc(3*sizeof(double));
     for (int j = 0; j<3; j++) { thiscenter[j] = cs[i][j]; }
 
-    int *parray = malloc(npart * sizeof(int));
-    double *com = calloc(3, sizeof(double));
-    double *dip = calloc(3, sizeof(double));
-    double *quad = calloc(9, sizeof(double));
+
+    // generate empty matrix
+    double ** matrix = malloc(3*sizeof(double*));
+    for (int j = 0; j<3; j++){
+      double * column = calloc(3 , sizeof(double));
+      matrix[j] = column;
+    }
+
+
 
     node *thischild = malloc(sizeof(node));
-
 
     thischild->parent = parind;
     thischild->cellindex = -1;
@@ -386,11 +411,13 @@ void refine(node * parent)
     thischild->child = nochild;
     thischild->center = thiscenter;
     thischild->np = 0;
-    thischild->particles = parray;
-    thischild->centre_of_mass = com;
+    thischild->particles = malloc(npart * sizeof(int));
+    thischild->centre_of_mass = calloc(3, sizeof(double));
+    thischild->diagonal = boxlen/pow(2, childlevel)*sqrt(3);
     thischild->mass = 0;
-    thischild->dipole = dip;
-    thischild->quadrupole = quad;
+    thischild->multip_vector = calloc(3, sizeof(double));
+    thischild->multip_matrix = matrix;
+    thischild->multip_sq = 0;
 
 
     newchildren[i] = thischild;
@@ -485,22 +512,17 @@ void refine(node * parent)
 
 
 
-//============================
-void get_multipoles()
-//============================
-{
 
-  //=============================================
-  // Calculate multipole moments for every cell
-  //=============================================
-  
 
-  // loop over root
-  for (int i = 0; i<8; i++){
-    calculate_multipole(i);
-  }
 
-}
+
+
+
+
+
+
+
+
 
 
 
@@ -508,10 +530,9 @@ void get_multipoles()
 
 
 //=====================================
-void calculate_multipole(int index)
+void get_multipole(int index)
 //=====================================
 {
- 
 
   //==================================================
   // This function calculates all necessary parts for
@@ -530,7 +551,7 @@ void calculate_multipole(int index)
     // if there is a child:
     if (thiscell->child[i] > 0){
       isleaf = 0; // cell has children, is not leaf
-      calculate_multipole(thiscell->child[i]);
+      get_multipole(thiscell->child[i]);
     }
   }
 
@@ -565,8 +586,12 @@ void calculate_multipole(int index)
     }
   }
   
+  
 
-  // now do actual calculations
+
+  //--------------------------------
+  // Get Centre of Mass
+  //--------------------------------
   for (int i = 0; i<3; i++){
     thiscell->centre_of_mass[i] /= thiscell->mass;
   }
@@ -574,9 +599,282 @@ void calculate_multipole(int index)
 
 
 
+  //---------------------------------------------
+  // calculate ( s - x_i ) vector related stuff
+  //---------------------------------------------
   
+  double vec[3] = {0, 0, 0};
+ 
+  for (int i = 0; i<3; i++){
+    vec[i] = thiscell->np * thiscell->centre_of_mass[i];
+  }
+
+  for (int p = 0; p < thiscell->np; p++){
+    int pind = thiscell->particles[p];
+    vec[0] -= x[pind];
+    vec[1] -= y[pind];
+    vec[2] -= z[pind];
+  }
+
+  //store vector
+  for (int i = 0; i<3; i++){
+    thiscell->multip_vector[i] = vec[i]; 
+  }
+
+  //get and store square
+  thiscell->multip_sq = sqrt( pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
 
 
-  
+  //get and store matrix
+  for (int i = 0; i<3; i++){
+    for (int j = 0; j<3; j++){
+      thiscell->multip_matrix[i][j] = vec[i]*vec[j];
+    }
+  }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+//=========================================
+void calculate_multipole_forces(int index)
+//=========================================
+{
+  //=====================================
+  // Descend until you find the leaves.
+  // Then calculate force.
+  //=====================================
+
+
+  node * thiscell = cells[index];
+
+
+  //-------------------------------------
+  // loop over children recursively
+  //-------------------------------------
+
+  int isleaf = 1; // assume this cell is leaf
+
+  for (int i = 0; i < 8; i++){
+
+    // if there is a child:
+    if (thiscell->child[i] > 0){
+      isleaf = 0; // cell has children, is not leaf
+      calculate_multipole_forces(thiscell->child[i]);
+    }
+  }
+
+
+
+  if (isleaf){
+    //------------------------------------
+    // calculate forces if this is a leaf
+    //------------------------------------
+
+    // use direct forces for particles in this cell
+    if (thiscell->np > 1) {
+    }
+
+    for (int root = 0; root < 8; root++){
+      walk_tree(thiscell, cells[root]);
+    }
+    
+  }
+
+
+}
+
+
+
+
+
+//===========================================================
+void calc_direct(int *list1, int len1, int *list2, int len2)
+//===========================================================
+{
+  //===================================================
+  // Calculate the direct forces between particles
+  // of list1 with length len1 and particles of list2
+  // with length len2
+  // works for same-cell same-cell interactions and
+  // different cells interacting (e.g. neighbours)
+  //===================================================
+
+  double force_fact, rsq;
+  int p_i, p_j;
+  for (int i = 0; i < len1; i++){
+    for (int j = 0; j < len2; j++){
+      p_i = list1[i];
+      p_j = list2[j];
+
+      if (p_i != p_j) {
+        rsq = pow(x[p_i]-x[p_j], 2) + 
+               pow(y[p_i]-y[p_j], 2) + 
+               pow(z[p_i]-z[p_j], 2);
+        force_fact = - m[p_i]*m[p_j] / pow(rsq, 1.5);
+        fx[p_i] += force_fact * (x[p_i]-x[p_j]);
+        fy[p_i] += force_fact * (y[p_i]-y[p_j]);
+        fz[p_i] += force_fact * (z[p_i]-z[p_j]);
+        // fx[p_j] += force_fact * (x[p_j]-x[p_i]);
+        // fy[p_j] += force_fact * (y[p_j]-y[p_i]);
+        // fz[p_j] += force_fact * (z[p_j]-z[p_i]);
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+//==========================================
+void walk_tree(node * target, node * source)
+//==========================================
+{
+
+  //============================================
+  // Walk the tree and calculate the forces.
+  //============================================
+ 
+
+
+  // If you are checking the same cell you're in, calculate direct
+  if (target->cellindex == source->cellindex){
+    if (target->np > 1){
+      calc_direct(target->particles, target->np, target->particles, target->np);
+    }
+    return;
+  }
+
+  
+  // Otherwise: do your thing
+  double absy, absy_sq;
+  double y[3] = {0, 0, 0};
+
+  // get distance
+  absy_sq = 0;
+  for (int i = 0; i<3; i++){
+    y[i] = target->centre_of_mass[i] - source->centre_of_mass[i];
+    absy_sq += pow( y[i], 2.0 );
+  }
+  
+  if (absy_sq > 0){
+
+    absy = sqrt(absy_sq);
+
+    if (theta(absy, source) <= theta_max){ 
+      // if multipole approx condition satisfied
+      calc_multipole(y, target, source); 
+    }
+    else {
+      // check whether source is a leaf cell
+      int isleaf = 1;
+      for (int c = 0; c < 8; c++){
+        if (source->child[c] > 0){
+          // if it isn't leaf, try children for multipole approach
+          isleaf = 0;
+          walk_tree( target, cells[source->child[c]]);
+        }
+      }
+
+      if (isleaf){
+        // if it was a leaf cell, do direct force calculation
+        calc_direct(target->particles, target->np, source->particles, source->np);
+      }
+    }
+
+  }
+  else{
+    printf("!!!!!!!!!!!! I SHOULDN'T BE HERE!!!!!!!!!!!!\n");
+  }
+  
+
+  return;
+
+}
+
+
+
+
+
+
+
+//============================================
+double theta(double y, node * source)
+//============================================
+{
+  //===================================================
+  // Calculate approximate angle of source wrt target 
+  //===================================================
+  
+ double theta = source->diagonal / y;
+ return (theta);
+
+
+}
+
+
+//===================================================================
+void calc_multipole(double y[3], node * target, node * source)
+//===================================================================
+
+{
+ 
+  //==================================================================
+  // This function does the actual force calculation of the multipole
+  //==================================================================
+  
+
+  double absy, absy_sq=0, absy_cube, absy_five, absy_seven;
+
+  for (int i = 0; i<3; i++){
+    absy_sq += pow(y[i], 2);
+  }
+  absy = sqrt(absy_sq);
+  absy_cube = pow(absy, 3);
+  absy_five = pow(absy, 5);
+  absy_seven = pow(absy, 7);
+
+
+
+  double force[3] = {0, 0, 0};
+
+  
+  // calc monopole
+  for (int j = 0; j<3; j++){
+    force[j] -= y[j]/absy_cube;
+  }
+
+
+
+
+
+  // multiply by sum mass in the end
+  for (int j = 0; j<3; j++){
+    force[j] *= source->mass * m[target->particles[0]]; 
+  }
+
+  
+  // apply calculated force to particles
+  int pind;
+  for (int p = 0; p<target->np; p++){
+    pind = target->particles[p];
+    fx[pind] += force[0];
+    fy[pind] += force[1];
+    fz[pind] += force[2];
+  }
+
+
+}
+

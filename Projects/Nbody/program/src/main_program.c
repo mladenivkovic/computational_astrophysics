@@ -20,6 +20,7 @@
 void initialise(int argc, char *argv[]);
 void set_units();
 void get_scales();
+void check_root();
 
 
 
@@ -38,12 +39,15 @@ int main(int argc, char *argv[])
   }
  
 
-
+  //-----------------------
   // Initialise program
+  //-----------------------
   initialise(argc, argv);
 
 
+  //-----------------------
   // get direct force calc
+  //-----------------------
   if (direct_force) {
     if (verbose) {printf("Started direct force calculation.\n");}
     get_direct_force();
@@ -51,23 +55,35 @@ int main(int argc, char *argv[])
   }
 
 
-  // build tree
+  //--------------------------
+  // Get multipole force calc
+  //--------------------------
   if (multipole) {
     if (verbose) {printf("Started multipole force calculation.\n");}
     build_tree();
-    get_multipoles();
-    write_cellparticles();
-
-    double totmass = 0;
+    
+    // Calculate multipole stuff
     for (int i = 0; i<8; i++){
-      printf("Root cell %d has mass: %g\n", i, cells[i]->mass);
-      totmass += cells[i]->mass;
+      get_multipole(i);
     }
-    printf("Total mass found recursively is: %g\n", totmass);
 
+    // calculate actual forces
+    for (int i = 0; i<8; i++){
+      calculate_multipole_forces(i);
+    }
+
+    write_cellparticles();
+    output_multipole();
+    // check_root();
   }
 
+
+
+
+
+  //------------------
   // write run info
+  //------------------
   write_info();
 
 
@@ -277,6 +293,63 @@ void get_scales()
 
 
 
+
+//===================
+void check_root()
+//===================
+{
+
+  //---------------------------------------------
+  // Prints the properties of the root nodes.
+  //---------------------------------------------
+
+  printf("\n");
+  printf("CHECKING ROOT VALUES\n");
+
+  double totmass = 0;
+
+  for (int i = 0; i<8; i++){
+    node * n = cells[i];
+    printf("\n");
+    printf("=============================\n");
+    printf("ROOT %d of level %d\n", n->cellindex, n->level);
+    printf("=============================\n");
+    printf("has parent: %d\nChildren: ", n->parent);
+    for (int j = 0; j<8; j++){
+      printf("%3d ", n->child[j]);
+    }
+    printf("\nCell center: ");
+    for (int j = 0; j<3; j++){
+      printf("%7g ", n->center[j]);
+    }
+    printf("\nCenter of mass: ");
+    for (int j = 0; j<3; j++){
+      printf("%7g ", n->centre_of_mass[j]);
+    }
+    printf("\nDiagonal: %7g np: %5d mass: %7g\n", n->diagonal, n->np, n->mass);
+    printf("Multipole vector: ");
+    for (int j = 0; j<3; j++){
+      printf("%7g ", n->multip_vector[j]);
+    }
+    printf("\nMultipole matrix:\n");
+    for (int j = 0; j<3; j++){
+      for (int k = 0; k<3; k++){
+        printf("%7g ", n->multip_matrix[j][k]);
+      }
+      printf("\n");
+    }
+  printf("\n");
+
+
+  totmass += n->mass;
+  }
+
+
+
+
+  printf("Root total mass: %7g\n\n", totmass);
+
+}
 
 
 

@@ -247,6 +247,45 @@ void output_direct_force()
 
 
 
+//============================
+void output_multipole()
+//============================
+{
+
+  //-------------------------------------
+  // Writes direct forces results to file.
+  //-------------------------------------
+ 
+  if(verbose){ printf("Writing multipole forces to file.\n"); }
+
+
+  // get filename
+  char filename[80] = "output_multipole_"; 
+  char multipole_str[10];
+  sprintf(multipole_str, "%.4g", 0.0);
+  strcat(filename, multipole_str);
+  strcat(filename, ".dat");
+
+
+
+
+  // write to file
+  FILE *outfilep = fopen(filename, "w");
+
+  fprintf(outfilep, "%15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s   %15s\n", "x ", "y ", "z ", "r ", "m ", "fx", "fy", "fz", "ftot");
+  for (int i = 0; i<npart; i++){
+    fprintf(outfilep, "%15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g   %15g\n", x[i], y[i], z[i], r[i], m[i], fx[i], fy[i], fz[i], sqrt(pow(fx[i],2) + pow(fy[i], 2) + pow(fz[i], 2) ) );
+  }
+
+  fclose(outfilep);
+
+}
+
+
+
+
+
+
 
 //==============================
 void write_info()
@@ -260,14 +299,18 @@ void write_info()
   if(verbose){ printf("Writing info to file.\n"); }
   // get filename
   char filename[80] = "info_"; 
-  char softening_str[10];
-  sprintf(softening_str, "%.4g", f_softening);
 
   if (multipole) {
-    strcat(filename, "multipole");
+    char multipole_str[10];
+    sprintf(multipole_str, "%.4g", 0.0);
+    strcat(filename, "multipole_");
+    strcat(filename, multipole_str);
   }
   else {
-    strcat(filename, softening_str); // direct force run
+    char softening_str[10];
+    sprintf(softening_str, "%.4g", f_softening);
+    strcat(filename, "direct_"); 
+    strcat(filename, softening_str);
   }
 
   strcat(filename, ".txt");

@@ -1,6 +1,16 @@
 #!/usr/bin/python3
 
 
+
+#=================================================
+# Plots average (magnitude of) force of particles
+# as a function of the particle distance from the
+# origin, for various softening factors alpha,
+# as well as the analytical profile.
+# Doesn't need any cmdline args.
+#=================================================
+
+
 from os import getcwd, listdir
 from sys import argv
 import numpy as np
@@ -245,9 +255,9 @@ if __name__=="__main__":
 
     softenings = []
     for name in files:
-        if name[:5] == "info_":
+        if name[:12] == "info_direct_":
             softening = name
-            softening = softening.replace("info_", "")
+            softening = softening.replace("info_direct_", "")
             softening = softening.replace(".txt","")
             softenings.append(softening)
 

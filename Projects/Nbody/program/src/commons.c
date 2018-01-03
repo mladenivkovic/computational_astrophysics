@@ -38,6 +38,7 @@ int ncellpartmax = 0;
 double boxlen = 0;
 int max_refinement_level = 1;
 int scale_cube = 0;
+double theta_max = 0.4;
 
 // units
 double scale_m = 0;
