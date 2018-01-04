@@ -45,7 +45,6 @@ int main(int argc, char *argv[])
   //-----------------------
   initialise(argc, argv);
 
-
   //-----------------------
   // get direct force calc
   //-----------------------
@@ -88,6 +87,7 @@ int main(int argc, char *argv[])
       for (int i = 0; i<8; i++){
         get_multipole(i);
       }
+
 #pragma omp master 
       { printf("Calculating multipole forces.\n");
       printf("Using multipole order %d\n", multipole_order); }
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     // write_cellparticles();
 
     write_output(2);
-    // check_root();
+    check_root();
   }
 
 
@@ -301,7 +301,7 @@ void get_scales()
     boxlen = 2;
   }
   else{
-    boxlen = 2*rmax ;
+    boxlen = 2;
   }
 
 

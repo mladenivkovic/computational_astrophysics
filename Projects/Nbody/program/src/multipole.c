@@ -43,7 +43,7 @@ void refine(node * parentnode);
 void calc_direct(int *list1, int len1, int *list2, int len2);
 void walk_tree(node * target, node * source);
 double theta(double y, node * source);
-void calc_multipole(double y[3], node * target, node * source);
+void calc_multipole(double d[3], node * target, node * source);
 
 
 
@@ -590,49 +590,55 @@ void get_multipole(int index)
   
 
 
-  //--------------------------------
-  // Get Centre of Mass
-  //--------------------------------
-  for (int i = 0; i<3; i++){
-    thiscell->centre_of_mass[i] /= thiscell->mass;
-  }
+  if (thiscell->np > 0){
 
-
-
-
-  //---------------------------------------------
-  // calculate ( s - x_i ) vector related stuff
-  //---------------------------------------------
-  
-  double vec[3] = {0, 0, 0};
- 
-  for (int i = 0; i<3; i++){
-    vec[i] = thiscell->np * thiscell->centre_of_mass[i];
-  }
-
-  for (int p = 0; p < thiscell->np; p++){
-    int pind = thiscell->particles[p];
-    vec[0] -= x[pind];
-    vec[1] -= y[pind];
-    vec[2] -= z[pind];
-  }
-
-  //store vector
-  for (int i = 0; i<3; i++){
-    thiscell->multip_vector[i] = vec[i]; 
-  }
-
-  //get and store square
-  thiscell->multip_sq = sqrt( pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
-
-
-  //get and store matrix
-  for (int i = 0; i<3; i++){
-    for (int j = 0; j<3; j++){
-      thiscell->multip_matrix[i][j] = vec[i]*vec[j];
+    //--------------------------------
+    // Get Centre of Mass
+    //--------------------------------
+    for (int i = 0; i<3; i++){
+      thiscell->centre_of_mass[i] /= thiscell->mass;
     }
-  }
 
+
+
+
+    //---------------------------------------------
+    // calculate ( s - x_i ) vector related stuff
+    //---------------------------------------------
+    
+    double vec[3] = {0, 0, 0};
+   
+    for (int p = 0; p < thiscell->np; p++){
+      int pind = thiscell->particles[p];
+
+      vec[0] = thiscell->centre_of_mass[0] - x[pind];
+      vec[1] = thiscell->centre_of_mass[1] - y[pind];
+      vec[2] = thiscell->centre_of_mass[2] - z[pind];
+
+      //store vector
+      for (int i = 0; i<3; i++){
+        thiscell->multip_vector[i] += vec[i]; 
+      }
+      
+      //get and store square
+      thiscell->multip_sq += sqrt( pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
+      
+      //get and store matrix
+      // TODO: doublecheck
+      for (int i = 0; i<3; i++){
+        for (int j = 0; j<3; j++){
+          thiscell->multip_matrix[i][j] += vec[i]*vec[j];
+        }
+      }
+
+
+    }
+
+
+
+
+
+  }
 }
 
 
@@ -679,14 +685,13 @@ void calculate_multipole_forces(int index)
   if (isleaf){
     //------------------------------------
     // calculate forces if this is a leaf
+    // walk the tree, starting with root
     //------------------------------------
 
-    // use direct forces for particles in this cell
-    if (thiscell->np > 1) {
-    }
-
     for (int root = 0; root < 8; root++){
-      walk_tree(thiscell, cells[root]);
+      if (cells[root]->np > 0){
+        walk_tree(thiscell, cells[root]);
+      }
     }
     
   }
@@ -720,12 +725,15 @@ void calc_direct(int *list1, int len1, int *list2, int len2)
                pow(y[p_i]-y[p_j], 2) + 
                pow(z[p_i]-z[p_j], 2);
         force_fact = - m[p_i]*m[p_j] / pow(rsq, 1.5);
-        fx[p_i] += force_fact * (x[p_i]-x[p_j]);
-        fy[p_i] += force_fact * (y[p_i]-y[p_j]);
-        fz[p_i] += force_fact * (z[p_i]-z[p_j]);
-        // fx[p_j] += force_fact * (x[p_j]-x[p_i]);
-        // fy[p_j] += force_fact * (y[p_j]-y[p_i]);
-        // fz[p_j] += force_fact * (z[p_j]-z[p_i]);
+#pragma omp critical
+        {
+          fx[p_i] += force_fact * (x[p_i]-x[p_j]);
+          fy[p_i] += force_fact * (y[p_i]-y[p_j]);
+          fz[p_i] += force_fact * (z[p_i]-z[p_j]);
+          // fx[p_j] += force_fact * (x[p_j]-x[p_i]);
+          // fy[p_j] += force_fact * (y[p_j]-y[p_i]);
+          // fz[p_j] += force_fact * (z[p_j]-z[p_i]);
+        }
       }
     }
   }
@@ -758,23 +766,23 @@ void walk_tree(node * target, node * source)
 
   
   // Otherwise: do your thing
-  double absy, absy_sq;
-  double y[3] = {0, 0, 0};
+  double absd, absd_sq;
+  double d[3] = {0, 0, 0};
 
   // get distance
-  absy_sq = 0;
+  absd_sq = 0;
   for (int i = 0; i<3; i++){
-    y[i] = target->centre_of_mass[i] - source->centre_of_mass[i];
-    absy_sq += pow( y[i], 2.0 );
+    d[i] = target->centre_of_mass[i] - source->centre_of_mass[i];
+    absd_sq += pow( d[i], 2.0 );
   }
   
-  if (absy_sq > 0){
+  if (absd_sq > 0){
 
-    absy = sqrt(absy_sq);
+    absd = sqrt(absd_sq);
 
-    if (theta(absy, source) <= theta_max){ 
+    if (theta(absd, source) <= theta_max){ 
       // if multipole approx condition satisfied
-      calc_multipole(y, target, source); 
+      calc_multipole(d, target, source); 
     }
     else {
       // check whether source is a leaf cell
@@ -831,7 +839,7 @@ double theta(double y, node * source)
 
 
 //===================================================================
-void calc_multipole(double y[3], node * target, node * source)
+void calc_multipole(double d[3], node * target, node * source)
 //===================================================================
 
 {
@@ -841,15 +849,15 @@ void calc_multipole(double y[3], node * target, node * source)
   //==================================================================
   
 
-  double absy, absy_sq=0, absy_cube, absy_five, absy_seven;
+  double absd, absd_sq=0, absd_cube, absd_five, absd_seven;
 
   for (int i = 0; i<3; i++){
-    absy_sq += pow(y[i], 2);
+    absd_sq += pow(d[i], 2.0);
   }
-  absy = sqrt(absy_sq);
-  absy_cube = pow(absy, 3);
-  absy_five = pow(absy, 5);
-  absy_seven = pow(absy, 7);
+  absd = sqrt(absd_sq);
+  absd_cube = pow(absd, 3.0);
+  absd_five = pow(absd, 5.0);
+  absd_seven = pow(absd, 7.0);
 
 
 
@@ -860,7 +868,7 @@ void calc_multipole(double y[3], node * target, node * source)
   // calc monopole 
   //-------------------
   for (int j = 0; j<3; j++){
-    force[j] -= y[j]/absy_cube;
+    force[j] -= d[j]/absd_cube;
   }
 
 
@@ -869,11 +877,11 @@ void calc_multipole(double y[3], node * target, node * source)
     // calc dipole
     //-------------------
     double scalar_product = 0;
-    for (int i = 0; i<3; i++){
-      scalar_product += y[i] * source->multip_vector[i];
+    for (int k = 0; k<3; k++){
+      scalar_product += d[k] * source->multip_vector[k];
     }
     for (int j = 0; j <3; j++){
-      force[j] += source->multip_vector[j]/absy_cube - 3.0* scalar_product / absy_five * y[j];
+      force[j] += source->multip_vector[j]/absd_cube - 3.0* scalar_product * d[j]/ absd_five;
     }
   }
 
@@ -887,14 +895,14 @@ void calc_multipole(double y[3], node * target, node * source)
 
     for (int j = 0; j<3; j++){
       for (int k = 0; k<3; k++){
-        sum1[j] += 3*source->multip_matrix[k][j]*y[k];
+        sum1[j] += 3*source->multip_matrix[k][j]*d[k];
       }
-      sum2 += y[j]*sum1[j];
+      sum2 += d[j]*sum1[j];
     }
 
     for (int j = 0; j<3; j++){
-      force[j] += (sum1[j] - (source->multip_sq)*y[j])/absy_five - 
-          2.5 * (sum2 - absy_sq*(source->multip_sq)) / absy_seven * y[j];
+      force[j] += (sum1[j] - (source->multip_sq)*d[j])/absd_five - 
+          2.5 * (sum2 - absd_sq*(source->multip_sq)) / absd_seven * d[j];
     }
     
 
@@ -904,24 +912,19 @@ void calc_multipole(double y[3], node * target, node * source)
 
 
 
-
-  //--------------------------------------
-  // multiply by sum mass in the end
-  //--------------------------------------
-  for (int j = 0; j<3; j++){
-    force[j] *= source->mass * m[target->particles[0]]; 
-  }
-
   
   //--------------------------------------
   // apply calculated force to particles
   //--------------------------------------
   int pind;
-  for (int p = 0; p<target->np; p++){
-    pind = target->particles[p];
-    fx[pind] += force[0];
-    fy[pind] += force[1];
-    fz[pind] += force[2];
+#pragma omp critical
+  {
+    for (int p = 0; p<target->np; p++){
+      pind = target->particles[p];
+      fx[pind] += force[0] * m[pind] * source->mass;
+      fy[pind] += force[1] * m[pind] * source->mass;
+      fz[pind] += force[2] * m[pind] * source->mass;
+    }
   }
 
 

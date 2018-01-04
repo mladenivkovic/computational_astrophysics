@@ -32,24 +32,23 @@ void get_direct_force()
   if (verbose) { printf("Found softening: %g\n", softening); }
   if (verbose) { printf("Computing direct forces.\n"); }
 
-  double force_fact;
-  double rsq;
 
 
 
-
-#pragma omp parallel
+#pragma omp parallel 
   {
+    double force_fact;
+    double rsq;
 
-    int nthreads = omp_get_num_threads();
+
 #pragma omp master
     {
       if (verbose){
-        printf("Started parallel region. Nthreads: %d\n", nthreads);
+        printf("Started parallel region.\n");
       }
     }
 
-#pragma omp for     
+#pragma omp for 
     for (int i = 0; i < npart; i++)
     {
       for (int j = i+1; j < npart; j++)
@@ -60,12 +59,15 @@ void get_direct_force()
 
         rsq = pow(dx, 2) + pow(dy, 2) + pow(dz, 2);
         force_fact = - m[i]*m[j] / pow(rsq + pow(softening, 2), 1.5);
-        fx[i] += force_fact * dx;
-        fy[i] += force_fact * dy;
-        fz[i] += force_fact * dz;
-        fx[j] += force_fact * (-dx);
-        fy[j] += force_fact * (-dy);
-        fz[j] += force_fact * (-dz);
+#pragma omp critical
+        {
+          fx[i] += force_fact * dx;
+          fy[i] += force_fact * dy;
+          fz[i] += force_fact * dz;
+          fx[j] += force_fact * (-dx);
+          fy[j] += force_fact * (-dy);
+          fz[j] += force_fact * (-dz);
+        }
       }
     }
 
