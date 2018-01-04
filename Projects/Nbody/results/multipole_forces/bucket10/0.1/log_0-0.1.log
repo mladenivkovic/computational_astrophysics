@@ -1,0 +1,36 @@
+Reading in data.
+Computing unit scales
+Found scales: scale_l = 724.69, scale_m = 4.62222e+06, scale_t = 1.11073e+06
+Setting units
+Total mass after translation 1
+Started multipole force calculation.
+Softening for direct force parts: 0.000271424
+Building tree.
+Building root.
+Refining level   1 ->   2:     8 cells to refine,     8 children need refinement. Ncells = 18
+Refining level   2 ->   3:     8 cells to refine,     8 children need refinement. Ncells = 40
+Refining level   3 ->   4:     8 cells to refine,     8 children need refinement. Ncells = 70
+Refining level   4 ->   5:     8 cells to refine,     8 children need refinement. Ncells = 106
+Refining level   5 ->   6:     8 cells to refine,     8 children need refinement. Ncells = 163
+Refining level   6 ->   7:     8 cells to refine,    16 children need refinement. Ncells = 219
+Refining level   7 ->   8:    16 cells to refine,    33 children need refinement. Ncells = 332
+Refining level   8 ->   9:    33 cells to refine,    47 children need refinement. Ncells = 549
+Refining level   9 ->  10:    47 cells to refine,    73 children need refinement. Ncells = 885
+Refining level  10 ->  11:    73 cells to refine,   117 children need refinement. Ncells = 1406
+Refining level  11 ->  12:   117 cells to refine,   181 children need refinement. Ncells = 2261
+Refining level  12 ->  13:   181 cells to refine,   272 children need refinement. Ncells = 3590
+Refining level  13 ->  14:   272 cells to refine,   388 children need refinement. Ncells = 5567
+Refining level  14 ->  15:   388 cells to refine,   475 children need refinement. Ncells = 8388
+Refining level  15 ->  16:   475 cells to refine,   481 children need refinement. Ncells = 11839
+Refining level  16 ->  17:   481 cells to refine,   285 children need refinement. Ncells = 15299
+Refining level  17 ->  18:   285 cells to refine,    75 children need refinement. Ncells = 17319
+Refining level  18 ->  19:    75 cells to refine,     5 children need refinement. Ncells = 17818
+Refining level  19 ->  20:     5 cells to refine,     0 children need refinement. Ncells = 17854
+Finished refinement. Max level: 20, ncells: 17854
+Entered parallel region with 3 threads.
+Calculating multipoles.
+Calculating multipole forces.
+Using multipole order 0, bucket=10, theta_max=0.1
+Writing multipole forces to file.
+Writing info to file.
+I'm finished!

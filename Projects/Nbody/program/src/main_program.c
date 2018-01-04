@@ -81,8 +81,9 @@ int main(int argc, char *argv[])
     // Calculate multipole stuff
 #pragma omp parallel
     {
+      int nthreads = omp_get_num_threads();
 #pragma omp master 
-      { printf("Entered parallel region.\nCalculating multipoles.\n"); }
+      { printf("Entered parallel region with %d threads.\nCalculating multipoles.\n", nthreads); }
 
 #pragma omp for
       for (int i = 0; i<8; i++){
@@ -91,7 +92,7 @@ int main(int argc, char *argv[])
 
 #pragma omp master 
       { printf("Calculating multipole forces.\n");
-      printf("Using multipole order %d\n", multipole_order); }
+      printf("Using multipole order %d, bucket=%d, theta_max=%g\n", multipole_order, ncellpartmax, theta_max); }
 
 #pragma omp for
       // calculate actual forces
@@ -101,7 +102,7 @@ int main(int argc, char *argv[])
     }
 
 
-    write_cellparticles();
+    // write_cellparticles();
 
     write_output(2);
     // check_root();
