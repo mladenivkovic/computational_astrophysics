@@ -20,6 +20,7 @@ typedef struct {
   int parent;
   int cellindex;
   int level;
+  int isleaf;
   int * child; // contains 8 children
   double * center; // x, y, z of cell centre
 
@@ -28,7 +29,7 @@ typedef struct {
 
   // multipole expansion stuff
   double * centre_of_mass;
-  double diagonal;
+  double groupsize;
   double mass;
   double * multip_vector;
   double ** multip_matrix;

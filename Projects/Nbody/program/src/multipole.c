@@ -44,7 +44,7 @@ void calc_direct(int *list1, int len1, int *list2, int len2);
 void walk_tree(node * target, node * source);
 double theta(double y, node * source);
 void calc_multipole(double d[3], node * target, node * source);
-
+int is_ancestor(node* target, node* source);
 
 
 
@@ -250,12 +250,13 @@ void build_root()
     root->parent = -1;
     root->cellindex = i;
     root->level = 1;
+    root->isleaf = 1;
     root->child = nochild;
     root->center = thiscenter;
     root->np = 0;
     root->particles = malloc(npart * sizeof(int));
     root->centre_of_mass = calloc(3, sizeof(double));
-    root->diagonal = boxlen*sqrt(3);
+    root->groupsize = 0; 
     root->mass = 0;
     root->multip_vector = calloc(3, sizeof(double));
     root->multip_matrix = matrix;
@@ -307,7 +308,8 @@ void build_root()
   // find out which root cells need to be refined
 
   for (int i = 0; i<8; i++){
-  if (cells[i]->np > ncellpartmax){
+    if (cells[i]->np > ncellpartmax){
+      cells[i]->isleaf = 0;
       thislevel_refine[nthislevel] = i;
       nthislevel += 1;
     }
@@ -409,12 +411,13 @@ void refine(node * parent)
     thischild->parent = parind;
     thischild->cellindex = -1;
     thischild->level = childlevel;
+    thischild->isleaf = 1;
     thischild->child = nochild;
     thischild->center = thiscenter;
     thischild->np = 0;
     thischild->particles = malloc(npart * sizeof(int));
     thischild->centre_of_mass = calloc(3, sizeof(double));
-    thischild->diagonal = boxlen/pow(2, childlevel)*sqrt(3);
+    thischild->groupsize = 0;
     thischild->mass = 0;
     thischild->multip_vector = calloc(3, sizeof(double));
     thischild->multip_matrix = matrix;
@@ -489,6 +492,7 @@ void refine(node * parent)
 
       if ( cells[lastcell]->np > ncellpartmax ){
         // this child needs to be refined
+        cells[lastcell]->isleaf = 0;
         nextlevel_refine[nnextlevel] = lastcell;
         nnextlevel += 1;
       }
@@ -545,35 +549,33 @@ void get_multipole(int index)
 
   // loop over children recursively
 
-  int isleaf = 1; // assume this cell is leaf
-
-  for (int i = 0; i < 8; i++){
-
-    // if there is a child:
-    if (thiscell->child[i] > 0){
-      isleaf = 0; // cell has children, is not leaf
-      get_multipole(thiscell->child[i]);
-    }
-  }
-
-
-
-
+  int isleaf = thiscell->isleaf;
   int thispart = 0;
   double com[] = {0,0,0};
 
-  if (isleaf){
-    // get centre of mass
+  if (!isleaf){
+    for (int i = 0; i < 8; i++){
+      if (thiscell->child[i] > 0){
+        get_multipole(thiscell->child[i]);
+      }
+    }
+  }
+  else{
+    // explicitly compute centre of mass for leaf cells
     for (int p = 0; p < thiscell->np; p++){
       thispart = thiscell->particles[p];
       com[0]+=m[thispart]*x[thispart];
       com[1]+=m[thispart]*y[thispart];
       com[2]+=m[thispart]*z[thispart];
+#pragma omp atomic
       thiscell->mass += m[thispart];
     }
 
-    for (int i = 0; i<3; i++){
-      thiscell->centre_of_mass[i] = com[i];
+#pragma omp critical
+    {
+     for (int i = 0; i<3; i++){
+        thiscell->centre_of_mass[i] = com[i];
+      }
     }
   }
 
@@ -581,9 +583,11 @@ void get_multipole(int index)
   // pass centre of mass data to parent, if parent exists
   if (thiscell->parent >= 0) {
     node * parent = cells[thiscell->parent];
+#pragma omp atomic
     parent->mass += thiscell->mass;
     for (int i = 0; i<3; i++){
-      parent->centre_of_mass[i] += thiscell->centre_of_mass[i];
+#pragma omp atomic
+      parent->centre_of_mass[i] += thiscell->centre_of_mass[i]; 
     }
   }
   
@@ -596,6 +600,7 @@ void get_multipole(int index)
     // Get Centre of Mass
     //--------------------------------
     for (int i = 0; i<3; i++){
+#pragma omp atomic
       thiscell->centre_of_mass[i] /= thiscell->mass;
     }
 
@@ -617,27 +622,48 @@ void get_multipole(int index)
 
       //store vector
       for (int i = 0; i<3; i++){
+#pragma omp atomic
         thiscell->multip_vector[i] += vec[i]; 
       }
       
       //get and store square
-      thiscell->multip_sq += sqrt( pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
+      double v =  pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2);
+#pragma omp atomic
+      thiscell->multip_sq += v;
+
+      // get group size
+      v = sqrt(v);
+#pragma omp critical
+      if (v > thiscell->groupsize){
+        thiscell->groupsize = v;
+      }
       
       //get and store matrix
       // TODO: doublecheck
-      for (int i = 0; i<3; i++){
-        for (int j = 0; j<3; j++){
-          thiscell->multip_matrix[i][j] += vec[i]*vec[j];
+#pragma omp critical
+      {
+        for (int i = 0; i<3; i++){
+          for (int j = 0; j<3; j++){
+            thiscell->multip_matrix[i][j] += vec[i]*vec[j];
+          }
         }
       }
 
+  // if (thiscell->cellindex == 8){
+  // printf("Got vec: %g %g %g\n", vec[0], vec[1], vec[2]);
+  // printf("Multipole matrix:\n");
+  // double check = 0;
+  // for (int j = 0; j<3; j++){
+  //   for (int k = 0; k<3; k++){
+  //     printf("%7g ", thiscell->multip_matrix[j][k]);
+  //   }
+  //   printf("\n");
+  //   check += thiscell->multip_matrix[j][j];
+  // }
+  //   printf("mp vector square: %g, check: %g\n\n", thiscell->multip_sq, check);
+  // }
 
     }
-
-
-
-
-
   }
 }
 
@@ -669,20 +695,18 @@ void calculate_multipole_forces(int index)
   // loop over children recursively
   //-------------------------------------
 
-  int isleaf = 1; // assume this cell is leaf
+  int isleaf = thiscell->isleaf;
 
-  for (int i = 0; i < 8; i++){
-
-    // if there is a child:
-    if (thiscell->child[i] > 0){
-      isleaf = 0; // cell has children, is not leaf
-      calculate_multipole_forces(thiscell->child[i]);
+  
+  if (!isleaf){
+    for (int i = 0; i < 8; i++){
+      // if there is a child: descend into child
+      if (thiscell->child[i] > 0){
+        calculate_multipole_forces(thiscell->child[i]);
+      }
     }
   }
-
-
-
-  if (isleaf){
+  else{
     //------------------------------------
     // calculate forces if this is a leaf
     // walk the tree, starting with root
@@ -693,51 +717,9 @@ void calculate_multipole_forces(int index)
         walk_tree(thiscell, cells[root]);
       }
     }
-    
   }
 }
 
-
-
-
-
-//===========================================================
-void calc_direct(int *list1, int len1, int *list2, int len2)
-//===========================================================
-{
-  //===================================================
-  // Calculate the direct forces between particles
-  // of list1 with length len1 and particles of list2
-  // with length len2
-  // works for same-cell same-cell interactions and
-  // different cells interacting (e.g. neighbours)
-  //===================================================
-
-  double force_fact, rsq;
-  int p_i, p_j;
-  for (int i = 0; i < len1; i++){
-    for (int j = 0; j < len2; j++){
-      p_i = list1[i];
-      p_j = list2[j];
-
-      if (p_i != p_j) {
-        rsq = pow(x[p_i]-x[p_j], 2) + 
-               pow(y[p_i]-y[p_j], 2) + 
-               pow(z[p_i]-z[p_j], 2);
-        force_fact = - m[p_i]*m[p_j] / pow(rsq, 1.5);
-#pragma omp critical
-        {
-          fx[p_i] += force_fact * (x[p_i]-x[p_j]);
-          fy[p_i] += force_fact * (y[p_i]-y[p_j]);
-          fz[p_i] += force_fact * (z[p_i]-z[p_j]);
-          // fx[p_j] += force_fact * (x[p_j]-x[p_i]);
-          // fy[p_j] += force_fact * (y[p_j]-y[p_i]);
-          // fz[p_j] += force_fact * (z[p_j]-z[p_i]);
-        }
-      }
-    }
-  }
-}
 
 
 
@@ -756,12 +738,26 @@ void walk_tree(node * target, node * source)
  
 
 
-  // If you are checking the same cell you're in, calculate direct
-  if (target->cellindex == source->cellindex){
-    if (target->np > 1){
-      calc_direct(target->particles, target->np, target->particles, target->np);
+
+  // if the source contains the target
+  if (is_ancestor(target, source)){
+    // if source is target
+    if (target->cellindex == source->cellindex){
+      if (target->np > 1){
+        calc_direct(target->particles, target->np, target->particles, target->np);
+      }
+      return;
     }
-    return;
+    else{ // move along.
+      for (int c = 0; c < 8; c++){
+        if (source->child[c]>0){
+          walk_tree( target, cells[source->child[c]] );
+        }
+      }
+      return;
+    }
+    
+
   }
 
   
@@ -786,16 +782,15 @@ void walk_tree(node * target, node * source)
     }
     else {
       // check whether source is a leaf cell
-      int isleaf = 1;
-      for (int c = 0; c < 8; c++){
-        if (source->child[c] > 0){
-          // if it isn't leaf, try children for multipole approach
-          isleaf = 0;
-          walk_tree( target, cells[source->child[c]]);
+      if (!source->isleaf){
+        for (int c = 0; c < 8; c++){
+          if (source->child[c] > 0){
+            // if it isn't leaf, try children for multipole approach
+            walk_tree( target, cells[source->child[c]]);
+          }
         }
       }
-
-      if (isleaf){
+      else {
         // if it was a leaf cell, do direct force calculation
         calc_direct(target->particles, target->np, source->particles, source->np);
       }
@@ -825,7 +820,7 @@ double theta(double y, node * source)
   // Calculate approximate angle of source wrt target 
   //===================================================
   
-  double theta = source->diagonal / y;
+  double theta = source->groupsize / y;
   return (theta);
 }
 
@@ -872,18 +867,18 @@ void calc_multipole(double d[3], node * target, node * source)
   }
 
 
-  if (multipole_order > 0){
-    //-------------------
-    // calc dipole
-    //-------------------
-    double scalar_product = 0;
-    for (int k = 0; k<3; k++){
-      scalar_product += d[k] * source->multip_vector[k];
-    }
-    for (int j = 0; j <3; j++){
-      force[j] += source->multip_vector[j]/absd_cube - 3.0* scalar_product * d[j]/ absd_five;
-    }
-  }
+  // if (multipole_order > 0){
+  //   //-------------------
+  //   // calc dipole
+  //   //-------------------
+  //   double scalar_product = 0;
+  //   for (int k = 0; k<3; k++){
+  //     scalar_product += d[k] * source->multip_vector[k];
+  //   }
+  //   for (int j = 0; j <3; j++){
+  //     force[j] += source->multip_vector[j]/absd_cube - 3.0* scalar_product * d[j]/ absd_five;
+  //   }
+  // }
 
 
   if (multipole_order > 1){
@@ -895,18 +890,15 @@ void calc_multipole(double d[3], node * target, node * source)
 
     for (int j = 0; j<3; j++){
       for (int k = 0; k<3; k++){
-        sum1[j] += 3*source->multip_matrix[k][j]*d[k];
+        sum1[j] += 3*(source->multip_matrix[j][k])*d[k];
       }
       sum2 += d[j]*sum1[j];
     }
 
     for (int j = 0; j<3; j++){
       force[j] += (sum1[j] - (source->multip_sq)*d[j])/absd_five - 
-          2.5 * (sum2 - absd_sq*(source->multip_sq)) / absd_seven * d[j];
+          2.5 * (sum2 - absd_sq*(source->multip_sq))* d[j] / absd_seven;
     }
-    
-
-
   }
 
 
@@ -930,3 +922,88 @@ void calc_multipole(double d[3], node * target, node * source)
 
 }
 
+
+
+
+
+
+
+
+
+//===========================================================
+void calc_direct(int *list1, int len1, int *list2, int len2)
+//===========================================================
+{
+  //===================================================
+  // Calculate the direct forces between particles
+  // of list1 with length len1 and particles of list2
+  // with length len2
+  // works for same-cell same-cell interactions and
+  // different cells interacting (e.g. neighbours)
+  //===================================================
+
+  double force_fact, rsq, dx, dy, dz;
+  int p_i, p_j;
+  for (int i = 0; i < len1; i++){
+    for (int j = 0; j < len2; j++){
+      p_i = list1[i];
+      p_j = list2[j];
+
+      if (p_i != p_j) {
+        dx = x[p_i]-x[p_j];
+        dy = y[p_i]-y[p_j];
+        dz = z[p_i]-z[p_j];
+
+        rsq = dx*dx + dy*dy + dz*dz;
+
+        force_fact = - m[p_i]*m[p_j] / pow(rsq + softening*softening, 1.5);
+#pragma omp critical
+        {
+          fx[p_i] += force_fact * (x[p_i]-x[p_j]);
+          fy[p_i] += force_fact * (y[p_i]-y[p_j]);
+          fz[p_i] += force_fact * (z[p_i]-z[p_j]);
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//=================================================
+int is_ancestor(node* target, node* source)
+//=================================================
+{
+  //=======================================
+  // checks if source is ancestor of target
+  //=======================================
+  
+  int tlev = target->level;
+  int slev = source->level;
+  int sind = source->cellindex;
+  int ancind = target->cellindex;
+
+
+
+  for (int i = slev; i < tlev; i++){
+    ancind = cells[ancind]->parent;
+  }
+
+  if (sind == ancind){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}

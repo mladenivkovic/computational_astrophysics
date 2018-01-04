@@ -24,9 +24,6 @@ void get_direct_force()
   //---------------------------------------------
 
 
-  // get softening
-  void get_softening();
-  get_softening();
 
 
   if (verbose) { printf("Found softening: %g\n", softening); }

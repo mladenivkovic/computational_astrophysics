@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
   //--------------------------
   if (multipole) {
     if (verbose) {printf("Started multipole force calculation.\n");}
+    printf("Softening for direct force parts: %g\n", softening);
     build_tree();
     
     // Calculate multipole stuff
@@ -100,10 +101,10 @@ int main(int argc, char *argv[])
     }
 
 
-    // write_cellparticles();
+    write_cellparticles();
 
     write_output(2);
-    check_root();
+    // check_root();
   }
 
 
@@ -149,6 +150,9 @@ void initialise(int argc, char *argv[])
 
   //transform read data to units
   set_units();
+
+  // get softening
+  get_softening();
 
 }
 
@@ -353,7 +357,7 @@ void check_root()
     for (int j = 0; j<3; j++){
       printf("%7g ", n->centre_of_mass[j]);
     }
-    printf("\nDiagonal: %7g np: %5d mass: %7g\n", n->diagonal, n->np, n->mass);
+    printf("\nGroup size: %7g np: %5d mass: %7g\n", n->groupsize, n->np, n->mass);
     printf("Multipole vector: ");
     for (int j = 0; j<3; j++){
       printf("%7g ", n->multip_vector[j]);

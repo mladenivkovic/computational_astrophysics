@@ -305,10 +305,6 @@ if __name__=="__main__":
     #----------------------------------
 
 
-    if (len(orders) != 3):
-        print("This plotting script is intended only for up to second order. Aborting.")
-        quit()
-
 
     av_forces = []
     for o in orders:
@@ -319,12 +315,12 @@ if __name__=="__main__":
 
         ax2.plot(bins[1:], av_force[1:]/analytical_solution,
                 marker='o',
-                linestyle='--',
+                linestyle='-',
                 markersize=3,
                 label=(r'order = ' + o))
 
 
-    pairings = [(2,0), (2,1), (1,0)]
+    pairings = [(1,0)]
 
     for pair in pairings:
         first = pair[0]
@@ -332,7 +328,7 @@ if __name__=="__main__":
 
         ax1.plot(bins[av_forces[second]>0], (av_forces[first])[av_forces[second]>0]/(av_forces[second])[av_forces[second]>0],
                 marker='o',
-                linestyle='--',
+                linestyle='-',
                 markersize=3,
                 label=(r'order ' + orders[first] + ' / order '+orders[second]))
 
@@ -365,16 +361,15 @@ if __name__=="__main__":
     ttl.set_position((.5, 1.05))
     
     ax1.grid()
-    #  delta = 6e-5
-    delta = 1e-8
-    ax1.set_ylim(1-delta, 1+delta)
-    ax1.set_yticks([1-delta/2, 1, 1+delta/2])
+    #  delta = 1e-3
+    #  ax1.set_ylim(1-delta, 1+delta)
+    #  ax1.set_yticks([1-delta/2, 1, 1+delta/2])
 
 
 
     ax2.legend()
     ax2.set_xscale('log')
-    ax2.set_yscale('log')
+    #  ax2.set_yscale('log')
     ax2.set_xlabel(r'$r$ $[r_{max}=1]$', 
             labelpad=10, 
             family='serif', 
