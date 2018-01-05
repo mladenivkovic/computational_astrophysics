@@ -475,29 +475,34 @@ void refine(node * parent)
     // if it has any particle, add to list
     if (newchildren[child]->np > 0){
       // give child a unique index
-      newchildren[child]->cellindex = lastcell;
+      int newind;
+#pragma omp critical
+      {
+        newind = lastcell;
+        lastcell += 1;
+      }
+      newchildren[child]->cellindex = newind;
 
       // copy child to cell array
-      cells[lastcell] = newchildren[child];
+      cells[newind] = newchildren[child];
 
       // tell parent what index its child has
-      parent->child[child] = lastcell;
+      parent->child[child] = newind;
 
       // tell particles what cell they belong to
       // do it here, when cell has obtained an index
-      for (int p = 0; p < cells[lastcell]->np; p++){
-        partcell[cells[lastcell]->particles[p]] = lastcell;
+      for (int p = 0; p < cells[newind]->np; p++){
+        partcell[cells[newind]->particles[p]] = newind;
       }
 
 
-      if ( cells[lastcell]->np > ncellpartmax ){
+      if ( cells[newind]->np > ncellpartmax ){
         // this child needs to be refined
-        cells[lastcell]->isleaf = 0;
-        nextlevel_refine[nnextlevel] = lastcell;
+        cells[newind]->isleaf = 0;
+        nextlevel_refine[nnextlevel] = newind;
         nnextlevel += 1;
       }
 
-      lastcell += 1;
 
     }
   }
