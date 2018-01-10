@@ -1,0 +1,87 @@
+echo "Importing computational astrophysics stuff."
+
+
+#=========================
+# ENVIRONMENT VARIABLES
+#=========================
+
+    export NB="$HOME"'/UZH/Computational_Astrophysics/Projects/Nbody'
+    export NBSCR="$NB"/scripts
+    export NBBA="$NB"/backup/
+
+    export ADV="$HOME"'/UZH/Computational_Astrophysics/Projects/advection'
+    export ADVSCR="$ADV"/scripts
+
+
+
+
+#=========================
+# PATH
+#=========================
+    export PATH="$PATH":"$NB"/scripts        #add python and bash script dir
+    export PATH="$PATH":"$NB"/program/bin    #add nbody program 
+    #export PATH="$PATH":'/home/mivkov/UZH/Bachelorarbeit/bachelorarbeit/programs/scripts'
+
+    export PATH="$PATH":"$ADV"/scripts
+    export PATH="$PATH":"$ADV"/program/bin
+
+
+
+
+
+#========================
+# Aliases
+#========================
+
+
+
+
+
+    #-------------------------
+    # Dir aliases
+    #-------------------------
+
+    alias nb='cd "$NB"'
+    alias nbscr='cd "$NB"/scripts'
+    alias ninc='cd "$NB"/program/include'
+    alias nbb='cd "$NB"/program/bin/'
+    alias ns='cd "$NB"/program/src'
+    alias nt='cd "$NB"/testing'
+    alias nex='cd "$NB"/exec'
+
+
+    alias advb='cd "$ADV"'
+    alias advscr='cd "$ADV"/scripts'
+    alias advinc='cd "$ADV"/program/include'
+    alias advb='cd "$ADV"/program/bin/'
+    alias advs='cd "$ADV"/program/src'
+    # alias nt='cd "$ADV"/testing'
+    alias advex='cd "$ADV"/exec'
+
+
+
+
+    #-------------------------
+    # Script shortcuts
+    #-------------------------
+
+
+
+
+
+    #-------------------------
+    # Running simulations
+    #-------------------------
+
+    #alias  go='DATE=`date +%F_%Hh%M`; mpiexec -n 4 ../ramses3d-mladen unbinding.nml 2>"$DATE"_error.log | tee run"$DATE".log'
+    alias nbod='nbody nbody-params ../files/data.ascii'
+    alias ntest='nbody nbody-params-test ../files/testdata_multipole.ascii'
+    # alias ntestplot='nbody nbody-params-test ../files/testdata_cube512.ascii && plot_particles_by_cell.py cellparticles.dat && eog particles_by_cell_plot-3D.png'
+    # alias ntestplot='nbody nbody-params ../files/testdata_cube512.ascii && plot_cells.py cellparticles.dat cellcentres.dat && eog particles_by_cell_plot-3D.png'
+    alias ncube='nbody nbody-params-test ../files/testdata_cube64.ascii'
+    alias gn='gdb --args nbody nbody-params ../files/data.ascii'
+
+
+
+
+    alias adv='advection advection-params'

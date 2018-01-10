@@ -1,0 +1,12 @@
+// Behaviour
+verbose = 1;
+direct_force = 0;
+multipole = 1;
+ncellpartmax = 10;
+theta_max = 0.4;
+scale_cube = 0;
+multipole_order = 2;
+
+
+// other stuff
+f_softening = 0.01;

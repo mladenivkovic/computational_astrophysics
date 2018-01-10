@@ -3,4 +3,8 @@ Course_Material
 Lecture_notes_teyssier
 
 *.o
-Projects/Nbody/program/bin/nbody
+Projects/Nbody/program/bin
+Projects/Nbody/exec/
+Projects/Nbody/testing
+
+Projects/advection/exec
