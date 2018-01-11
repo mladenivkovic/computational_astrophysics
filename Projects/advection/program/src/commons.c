@@ -26,6 +26,8 @@ int nx = 0;
 double dx = 0;
 double t = 0;
 double dt = 0;
+double t_out = 1;
+double t_out_step = 1;
 
 
 //---------------
@@ -33,4 +35,5 @@ double dt = 0;
 //---------------
 
 double *u = 0;
+double *u_old = 0;
 

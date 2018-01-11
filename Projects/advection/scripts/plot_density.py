@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     x = 0.0*rho 
     for i in range(nx):
-        x[i] = i*nx
+        x[i] = i/nx
 
     
     

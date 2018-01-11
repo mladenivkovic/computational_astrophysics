@@ -10,6 +10,7 @@
 #include <omp.h>
 #include "commons.h"
 #include "io.h"
+#include "advection.h"
 
 
 
@@ -38,10 +39,34 @@ int main(int argc, char *argv[])
   initialise(argc, argv);
 
 
+  //-----------------------
+  // Main advection loop
+  //-----------------------
+  while (t < t_end){
+    
+    if (verbose){
+      printf("\n=======================\nStarting new timestep.\n=======================\n");
+    }
+    // compute next timestep
+    get_timestep();
 
-  write_output(0);
+    // integrate density advection
+    advect();
 
-  if (verbose) { printf("I'm finished!\n"); }
+    // move timestep along, write output if necessary
+    t += dt;
+    if (t == t_out){
+      write_output(0);
+      t_out += t_out_step;
+    }
+
+    // t = t_end; // stop at first step
+  }
+
+
+
+
+  if (verbose) { printf("\nI'm finished!\n"); }
   return(0);
 
 }
@@ -81,8 +106,11 @@ void initialise(int argc, char *argv[])
   }
 
   u = malloc((nx+2)*sizeof(double));
+  u_old = malloc((nx+2)*sizeof(double));
   dx = 1.0/((double) nx);
+  v = 1;
 
+  t_out = t_out_step;
 
 
   //------------------------------

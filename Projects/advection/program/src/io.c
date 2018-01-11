@@ -79,6 +79,9 @@ void readparams(int argc, char *argv[])
       else if (strcmp(varname, "t_end")==0){
         t_end = atof(varvalue);
       }
+      else if (strcmp(varname, "t_out_step")==0){
+        t_out_step = atof(varvalue);
+      }
       else if (strcmp(varname, "//")==0) {
         // ignore comments
         continue;
@@ -131,11 +134,10 @@ void write_output(int output_case)
   if (density_profile == 0) {
 
 
-    strcat(filename, "step_function");
+    strcat(filename, "step_function-");
     // char softening_str[10];
     // sprintf(softening_str, "%.4g", f_softening);
     // strcat(filename, softening_str);
-    strcat(filename, ".dat");
   }
   // else if (output_case == 2){
   //
@@ -155,7 +157,11 @@ void write_output(int output_case)
     printf("Something went wrong with output. Got case=%d, which I dont recognise.\n", output_case);
     return;
   }
-
+  
+  char time_str[8] = "";
+  sprintf(time_str, "%06.2f", t);
+  strcat(filename, time_str);
+  strcat(filename, ".dat");
 
 
 
