@@ -14,7 +14,8 @@
 
 //runtime vars
 int verbose = 0;          // verbose = false by default
-int density_profile = 0; 
+int density_profile = -1; 
+int method = -1;
 double t_end = 0;
 double v = 1;
 
@@ -26,8 +27,9 @@ int nx = 0;
 double dx = 0;
 double t = 0;
 double dt = 0;
-double t_out = 1;
-double t_out_step = 1;
+double t_out[8] = {0, 1, 2, 5, 10, 20, 50, 100};
+int t_out_step = 0;
+double courant_factor = 1;
 
 
 //---------------

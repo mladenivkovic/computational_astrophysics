@@ -85,4 +85,4 @@ echo "Importing computational astrophysics stuff."
 
 
     alias adv='advection advection-params'
-    alias advp='advection advection-params && for i in output*; do plot_density.py $i; done && eog density_plot*'
+    alias advp='advection advection-params &&  plot_density.py && eog plot*'

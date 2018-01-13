@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
   // Initialise program
   //-----------------------
   initialise(argc, argv);
+  if (verbose) {printf("Courant factor: %g\n", courant_factor);}
 
 
   //-----------------------
@@ -44,9 +45,6 @@ int main(int argc, char *argv[])
   //-----------------------
   while (t < t_end){
     
-    if (verbose){
-      printf("\n=======================\nStarting new timestep.\n=======================\n");
-    }
     // compute next timestep
     get_timestep();
 
@@ -55,9 +53,9 @@ int main(int argc, char *argv[])
 
     // move timestep along, write output if necessary
     t += dt;
-    if (t == t_out){
+    if (t == t_out[t_out_step]){
       write_output(0);
-      t_out += t_out_step;
+      t_out_step += 1;
     }
 
     // t = t_end; // stop at first step
@@ -110,7 +108,6 @@ void initialise(int argc, char *argv[])
   dx = 1.0/((double) nx);
   v = 1;
 
-  t_out = t_out_step;
 
 
   //------------------------------
@@ -133,5 +130,33 @@ void initialise(int argc, char *argv[])
       }
     }
   }
+  else if (density_profile == 1){
+    //--------------------------------------------
+    printf("Using linear step density profile.\n");
+    //--------------------------------------------
+    for (int i = 0; i<(nx+2); i++){
+      if (i*dx <= 0.3){
+        u[i] = 1;
+      }
+      else if (i*dx <= 0.6){
+        u[i] = 2+1.7*(i*dx-0.3);
+      }
+      else{
+        u[i] = 1;
+      }
+    }
+  }
+  else if (density_profile == 2){
+    //--------------------------------------------
+    printf("Using gauss density profile.\n");
+    //--------------------------------------------
+    for (int i = 0; i<(nx+2); i++){
+      u[i] = 1 + exp(-pow((i*dx - 0.5), 2)/0.1);
+    }
+  }
+  else {
+    printf("Not recognized density_profile = %d\n", density_profile);
+  }
+
 }
 

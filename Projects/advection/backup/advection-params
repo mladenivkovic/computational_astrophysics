@@ -1,0 +1,17 @@
+// parameters for advection
+verbose = 1;
+nx = 100;
+t_end = 100;
+density_profile = 1;
+method = 0;
+courant_factor = 0.9;
+
+// density profiles:
+// 0: step function
+// 1: linear step
+// 2: gauss
+//
+// methods:
+// 0 : piecewise constant
+// 1 :
+// 2 :

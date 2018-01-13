@@ -76,11 +76,14 @@ void readparams(int argc, char *argv[])
       else if (strcmp(varname, "density_profile")==0){
         density_profile = atoi(varvalue);
       }
+      else if (strcmp(varname, "method")==0){
+        method = atoi(varvalue);
+      }
       else if (strcmp(varname, "t_end")==0){
         t_end = atof(varvalue);
       }
-      else if (strcmp(varname, "t_out_step")==0){
-        t_out_step = atof(varvalue);
+      else if (strcmp(varname, "courant_factor")==0){
+        courant_factor = atof(varvalue);
       }
       else if (strcmp(varname, "//")==0) {
         // ignore comments
@@ -124,6 +127,7 @@ void write_output(int output_case)
   //----------------------------------------
 
 
+  if (verbose) { printf("Writing output for t=%4lf\n", t); }
 
   //---------------------
   // get filename
@@ -131,36 +135,42 @@ void write_output(int output_case)
 
   char filename[80] = "output_"; 
 
+  // name density profile used
   if (density_profile == 0) {
-
-
-    strcat(filename, "step_function-");
-    // char softening_str[10];
-    // sprintf(softening_str, "%.4g", f_softening);
-    // strcat(filename, softening_str);
+    strcat(filename, "step_function_");
   }
-  // else if (output_case == 2){
-  //
-  //
-  //   // get filename
-  //   strcat(filename, "multipole_");
-  //   char multipole_str[10];
-  //   char thetamax_str[10];
-  //   sprintf(multipole_str, "%1d", multipole_order);
-  //   sprintf(thetamax_str, "%3g", theta_max);
-  //   strcat(filename, multipole_str);
-  //   strcat(filename, "-");
-  //   strcat(filename, thetamax_str);
-  //   strcat(filename, ".dat");
-  // }
+  else if (density_profile == 1){
+    strcat(filename, "linear_step_");
+  }
+  else if (density_profile == 2){
+    strcat(filename, "gauss_");
+  }
   else{
-    printf("Something went wrong with output. Got case=%d, which I dont recognise.\n", output_case);
+    printf("Something went wrong with output. Got density_profile=%d, which I dont recognise.\n", density_profile);
     return;
   }
+
+  // name method used
+  if (method==0){
+    strcat(filename, "pwconst_");
+  }
+  else{
+    printf("Something went wrong with output. Got method=%d, which I dont recognise.\n", method);
+    return;
+  }
+
+  // add nx
+  char len[7] = "";
+  sprintf(len, "%06d", nx);
+  strcat(filename, len);
+  strcat(filename, "-");
   
+  // add current time
   char time_str[8] = "";
   sprintf(time_str, "%06.2f", t);
   strcat(filename, time_str);
+
+  // finish up
   strcat(filename, ".dat");
 
 
