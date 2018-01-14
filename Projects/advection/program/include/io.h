@@ -3,4 +3,4 @@
 //================================
 
 extern void readparams(int argc, char *argv[]);
-extern void write_output(int output_case);
+extern void write_output();

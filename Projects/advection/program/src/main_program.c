@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     // move timestep along, write output if necessary
     t += dt;
     if (t == t_out[t_out_step]){
-      write_output(0);
+      write_output();
       t_out_step += 1;
     }
 
@@ -103,8 +103,8 @@ void initialise(int argc, char *argv[])
     exit(1);
   }
 
-  u = malloc((nx+2)*sizeof(double));
-  u_old = malloc((nx+2)*sizeof(double));
+  u = malloc((nx+4)*sizeof(double));
+  u_old = malloc((nx+4)*sizeof(double));
   dx = 1.0/((double) nx);
   v = 1;
 
@@ -118,7 +118,7 @@ void initialise(int argc, char *argv[])
     //--------------------------------------------
     printf("Using step density profile.\n");
     //--------------------------------------------
-    for (int i = 0; i<(nx+2); i++){
+    for (int i = 0; i<(nx)+4; i++){
       if (i*dx <= 0.3){
         u[i] = 1;
       }
@@ -158,5 +158,9 @@ void initialise(int argc, char *argv[])
     printf("Not recognized density_profile = %d\n", density_profile);
   }
 
+  u[0] = u[nx];
+  u[1] = u[nx+1];
+  u[nx+2] = u[2];
+  u[nx+3] = u[3];
 }
 

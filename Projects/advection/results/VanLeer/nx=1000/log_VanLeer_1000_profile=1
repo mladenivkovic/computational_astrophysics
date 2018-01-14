@@ -1,0 +1,13 @@
+Started advection program.
+Reading parameters.
+Using linear step density profile.
+Courant factor: 0.9
+Writing output for t=1.000000
+Writing output for t=2.000000
+Writing output for t=5.000000
+Writing output for t=10.000000
+Writing output for t=20.000000
+Writing output for t=50.000000
+Writing output for t=100.000000
+
+I'm finished!

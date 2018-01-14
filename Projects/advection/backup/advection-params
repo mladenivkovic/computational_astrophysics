@@ -1,9 +1,9 @@
 // parameters for advection
 verbose = 1;
 nx = 100;
-t_end = 100;
-density_profile = 1;
-method = 0;
+t_end = 5;
+density_profile = 0;
+method = 1;
 courant_factor = 0.9;
 
 // density profiles:
@@ -13,5 +13,6 @@ courant_factor = 0.9;
 //
 // methods:
 // 0 : piecewise constant
-// 1 :
-// 2 :
+// 1 : piecewise linear
+// 2 : piecewise linear with minmod slope limiter
+// 3 : piecewise linear with VanLeer slope limiter

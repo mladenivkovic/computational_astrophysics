@@ -117,7 +117,7 @@ void readparams(int argc, char *argv[])
 
 
 //==================================
-void write_output(int output_case)
+void write_output()
 //==================================
 {
 
@@ -153,6 +153,15 @@ void write_output(int output_case)
   // name method used
   if (method==0){
     strcat(filename, "pwconst_");
+  }
+  else if (method == 1){
+    strcat(filename, "pwlin_");
+  }
+  else if (method == 2){
+    strcat(filename, "minmod_");
+  }
+  else if (method == 3){
+    strcat(filename, "VanLeer_");
   }
   else{
     printf("Something went wrong with output. Got method=%d, which I dont recognise.\n", method);

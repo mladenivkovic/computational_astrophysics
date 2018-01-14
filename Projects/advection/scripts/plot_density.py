@@ -142,20 +142,27 @@ def getdata(srcfile):
 
 
 
-#====================
-def gettitle(i, nx):
-#====================
+#===================================
+def gettitle(profile, method, nx):
+#===================================
     """
     Constructs the title for the plot.
     Returns:
     string title
     """
     global profiles
-    global methods
 
-    title = profiles[i]+"profile"
-    if methods[i] == "pwconst":
-        title += " piecewise constant method nx="+str(nx)
+    title = profile+"profile"
+    if method == "pwconst":
+        title += " piecewise constant method"
+    elif method == "pwlin":
+        title += " piecewise linear method"
+    elif method == "minmod":
+        title += " with minmod slope limiter"
+    elif method == "VanLeer":
+        title += " with VanLeer slope limiter"
+
+    title+=" nx="+str(nx)
 
     return title
 
@@ -252,12 +259,12 @@ if __name__ == "__main__":
 
                 # plot analytical solution
                 rho_theory = get_theoretical_value(x, p)
-                ax.plot(x, rho_theory, 'k',
-                        label = 'theoretical value')
+                ax.plot(x, rho_theory, 'k--',
+                        label = 'theoretical result')
 
                 ax.legend()
 
-                title = gettitle(i, nx)
+                title = gettitle(p, m, nx)
                 ax.set_title(title,
                     family='serif', 
                     size=14)

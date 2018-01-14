@@ -18,8 +18,11 @@ extern int density_profile; // which density profile to use
                             // 2 : gauss
 extern int method;          // which method to use
                             // 0 : piecewise constant
-                            // 1 : 
-extern double t_end;        // do multiplole calculation
+                            // 1 : piecewise linear
+                            // 2 : piecewise linear with minmod slope limiter
+                            // 3 : piecewise linear with VanLeer slope limiter
+
+extern double t_end;        // time when to end
 
 
 
@@ -31,7 +34,7 @@ extern double dt;       // time step
 extern double t_out[];  // next output time 
 extern int t_out_step;  // step for output time
 extern double v;        // global velocity
-extern double courant_factor;
+extern double courant_factor; // factor for courant condition; Must be <= 1
 
 
 //---------------
