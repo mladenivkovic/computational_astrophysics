@@ -5,7 +5,7 @@
 #include "io.h"
 
 
-double get_pwconst_flux(int i);
+void set_boundary();
 void get_pwlin_flux(int i, double *flux1, double *flux2);
 double get_slope(int i);
 double get_minmod_slope(int i);
@@ -37,10 +37,17 @@ void initialise1d()
     exit(1);
   }
 
-  rho = malloc((nx+4)*sizeof(double));
-  rho_old = malloc((nx+4)*sizeof(double));
-  dx = 1.0/((double) nx);
-  u = 1;
+#pragma omp single
+  { rho = malloc((nx+4)*sizeof(double)); }
+#pragma omp single
+  { rho_old = malloc((nx+4)*sizeof(double)); }
+#pragma omp single
+  { rho_inter = malloc((nx+4)*sizeof(double)); }
+#pragma omp single
+  { 
+    dx = 1.0/((double) nx); 
+    u = 1;
+  }
 
 
 
@@ -52,15 +59,16 @@ void initialise1d()
     //--------------------------------------------
     printf("Using step density profile.\n");
     //--------------------------------------------
-    for (int i = 0; i<(nx)+4; i++){
+#pragma omp for
+    for (int i = 0; i<nx; i++){
       if (i*dx <= 0.3){
-        rho[i] = 1;
+        rho[i+2] = 1;
       }
       else if (i*dx <= 0.6){
-        rho[i] = 2;
+        rho[i+2] = 2;
       }
       else{
-        rho[i] = 1;
+        rho[i+2] = 1;
       }
     }
   }
@@ -68,15 +76,16 @@ void initialise1d()
     //--------------------------------------------
     printf("Using linear step density profile.\n");
     //--------------------------------------------
-    for (int i = 0; i<(nx+2); i++){
+#pragma omp for
+    for (int i = 0; i<nx; i++){
       if (i*dx <= 0.3){
-        rho[i] = 1;
+        rho[i+2] = 1;
       }
       else if (i*dx <= 0.6){
-        rho[i] = 2+1.7*(i*dx-0.3);
+        rho[i+2] = 2+1.7*(i*dx-0.3);
       }
       else{
-        rho[i] = 1;
+        rho[i+2] = 1;
       }
     }
   }
@@ -84,18 +93,21 @@ void initialise1d()
     //--------------------------------------------
     printf("Using gauss density profile.\n");
     //--------------------------------------------
-    for (int i = 0; i<(nx+2); i++){
-      rho[i] = 1 + exp(-pow((i*dx - 0.5), 2)/0.1);
+#pragma omp for
+    for (int i = 0; i<nx; i++){
+      rho[i+2] = 1 + exp(-pow((i*dx - 0.5), 2)/0.1);
     }
   }
   else {
-    printf("Not recognized density_profile = %d\n", density_profile);
+#pragma omp single
+    {
+      printf("Not recognized density_profile = %d\n", density_profile);
+    }
   }
 
-  rho[0] = rho[nx];
-  rho[1] = rho[nx+1];
-  rho[nx+2] = rho[2];
-  rho[nx+3] = rho[3];
+
+  set_boundary();
+
 }
 
 
@@ -153,157 +165,139 @@ void advect1d()
   // Preparation 
   //----------------
 
-#pragma omp parallel
-  {
-    // store old values
+  // store old values
 #pragma omp for
-    for (int i = 0; i<nx+4; i++){
-      rho_old[i] = rho[i];
+  for (int i = 0; i<nx+4; i++){
+    rho_old[i] = rho[i];
+  }
+
+
+  //---------------------- 
+  // Loop over cells
+  //---------------------- 
+  
+  double c = dt/dx * u;
+
+  if (method == 0){
+    //--------------------------------
+    // piecewise constant method
+    //--------------------------------
+#pragma omp for
+    for (int i = 2; i<nx+2; i++){
+      rho[i] = rho_old[i] - c*(rho_old[i]-rho_old[i-1]);
     }
+  }
 
 
-    //---------------------- 
-    // Loop over cells
-    //---------------------- 
-    
-    if (method == 0){
-      //--------------------------------
-      // piecewise constant method
-      //--------------------------------
-      double a = dt/dx * u;
+  else if (method == 1){
+    //--------------------------------
+    // piecewise linear method
+    //--------------------------------
+    double slope_l, slope_r;
+  
+    if (u >= 0){
+      
 #pragma omp for
       for (int i = 2; i<nx+2; i++){
-        rho[i] = rho_old[i] + a*get_pwconst_flux(i);
+        slope_l = get_slope(i-1);
+        slope_r = get_slope(i);
+        rho[i] = rho_old[i] - c *(rho_old[i] - rho_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
       }
     }
+    else {
+      printf("Can't handle u<0. Aborting\n");
+      exit(123);
+    }
+  }
 
 
-    else if (method == 1){
-      //--------------------------------
-      // piecewise linear method
-      //--------------------------------
-//       double a1 = u * dt / (4 * dx);
-//       double a2 = a1 * a1*4;
-//       double f1 = 0, f2 = 0;
-// #pragma omp for
-//       for (int i = 2; i<nx+2; i++){
-//         get_pwlin_flux(i, &f1, &f2);
-//         rho[i] = rho_old[i] - a1*f1 + a2*f2;
-      double c = u * dt / dx;
-      double slope_l, slope_r;
-     
-      if (u > 0) {
+
+  else if (method == 2){
+    //-----------------------------------------------------
+    // piecewise linear method with minmod slope limiter
+    //-----------------------------------------------------
+
+    double slope_l, slope_r;
+   
+    if (u >= 0) {
 #pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          slope_l = get_slope(i-1);
-          slope_r = get_slope(i);
-          rho[i] = rho_old[i] - c *(rho_old[i] - rho_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
-        }
-      }
-      else{
-#pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          slope_l = get_slope(i);
-          slope_r = get_slope(i+1);
-          rho[i] = rho_old[i] - c *(rho_old[i+1] - rho_old[i]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
-        }
+      for (int i = 2; i<nx+2; i++){
+        slope_l = get_minmod_slope(i-1);
+        slope_r = get_minmod_slope(i);
+        rho[i] = rho_old[i] - c *(rho_old[i] - rho_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
       }
     }
+    else{
+      printf("Can't handle u<0. Aborting\n");
+      exit(123);
+    }
+  }
 
 
 
-    else if (method == 2){
-      //-----------------------------------------------------
-      // piecewise linear method with minmod slope limiter
-      //-----------------------------------------------------
 
-      double c = u * dt / dx;
-      double slope_l, slope_r;
-     
-      if (u > 0) {
+  else if (method == 3){
+    //-----------------------------------------------------
+    // piecewise linear method with VanLeer flux limiter
+    //-----------------------------------------------------
+
+    double fluxleft, fluxright; 
+
+    if (u > 0) {
 #pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          slope_l = get_minmod_slope(i-1);
-          slope_r = get_minmod_slope(i);
-          rho[i] = rho_old[i] - c *(rho_old[i] - rho_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
-        }
-      }
-      else{
-#pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          slope_l = get_minmod_slope(i);
-          slope_r = get_minmod_slope(i+1);
-          rho[i] = rho_old[i] - c *(rho_old[i+1] - rho_old[i]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
-        }
+      for (int i = 2; i<nx+2; i++){
+        fluxleft = u * rho_old[i-1] + 0.5*u*(1 - c) * VanLeer_limiter1(i) * (rho_old[i]-rho_old[i-1]);
+        fluxright = u * rho_old[i] + 0.5*u*(1 - c) * VanLeer_limiter1(i+1) * (rho_old[i+1]-rho_old[i]);
+        rho[i] = rho_old[i] + c * (fluxleft - fluxright);
       }
     }
-
-
-
-
-    else if (method == 3){
-      //-----------------------------------------------------
-      // piecewise linear method with VanLeer flux limiter
-      //-----------------------------------------------------
-
-      double fluxleft, fluxright; 
-      double c = dt / dx * u;
-
-      if (u > 0) {
+    else{
 #pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          fluxleft = u * rho_old[i-1] + 0.5*u*(1 - c) * VanLeer_limiter1(i) * (rho_old[i]-rho_old[i-1]);
-          fluxright = u * rho_old[i] + 0.5*u*(1 - c) * VanLeer_limiter1(i+1) * (rho_old[i+1]-rho_old[i]);
-          rho[i] = rho_old[i] + c * (fluxleft - fluxright);
-        }
-      }
-      else{
-#pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          fluxleft = u * rho_old[i] - 0.5*u*(1 + c) * VanLeer_limiter2(i) * (rho_old[i]-rho_old[i-1]);
-          fluxright = u * rho_old[i+1] - 0.5*u*(1 + c) * VanLeer_limiter2(i+1) * (rho_old[i+1]-rho_old[i]);
-          rho[i] = rho_old[i] + c * (fluxleft - fluxright);
-        }
+      for (int i = 2; i<nx+2; i++){
+        fluxleft = u * rho_old[i] - 0.5*u*(1 + c) * VanLeer_limiter2(i) * (rho_old[i]-rho_old[i-1]);
+        fluxright = u * rho_old[i+1] - 0.5*u*(1 + c) * VanLeer_limiter2(i+1) * (rho_old[i+1]-rho_old[i]);
+        rho[i] = rho_old[i] + c * (fluxleft - fluxright);
       }
     }
-  } // end parallel region
+  }
 
 
 
 
-  //implement periodic boundary condition
-  rho[0] = rho[nx];
-  rho[1] = rho[nx+1];
-  rho[nx+2] = rho[2];
-  rho[nx+3] = rho[3];
-
-
+  set_boundary();
 
 }
 
 
 
 
-//=========================================
-double get_pwconst_flux(int i)
-//=========================================
+
+
+//======================
+void set_boundary()
+//======================
 {
-  //---------------------------------------
-  // computes the flux for the piecewise
-  // constant method
-  //---------------------------------------
+  //------------------------------------
+  // Set periodic boundary conditions
+  //------------------------------------
 
-  double f = 0;
-
-  if (u < 0){
-    f = (rho_old[i]-rho_old[i+1]);
-  }
-  else{
-    f = (rho_old[i-1]-rho_old[i]);
+#pragma omp single
+  {
+    rho[0] = rho[nx];
+    rho[1] = rho[nx+1];
+    rho[nx+2] = rho[2];
+    rho[nx+3] = rho[3];
   }
 
-  return (f);
+  return;
+
 }
+
+
+
+
+
+
 
 
 

@@ -42,6 +42,7 @@ double courant_factor = 1;
 //---------------
 
 double *rho = 0;
+double *rho_inter = 0;
 double *rho_old = 0;
 
 double **rho2d = 0;

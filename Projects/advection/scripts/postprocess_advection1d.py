@@ -129,7 +129,7 @@ def getdata(srcfile):
 
     x = 0.0*rho 
     for i in range(nx):
-        x[i] = (i+1)/nx
+        x[i] = i/(nx)
 
     return t, rho, nx, x
 

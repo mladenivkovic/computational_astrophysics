@@ -46,6 +46,7 @@ extern double courant_factor; // factor for courant condition; Must be <= 1
 //---------------
 
 extern double *rho;
+extern double *rho_inter;
 extern double *rho_old;
 
 extern double **rho2d;

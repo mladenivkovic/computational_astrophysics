@@ -64,32 +64,48 @@ int main(int argc, char *argv[])
 void run1d()
 //==========================
 {
-  //-----------------------
-  // Initialise program
-  //-----------------------
+ 
   
-  initialise1d();
-  if (verbose) {printf("Courant factor: %g\n", courant_factor);}
+#pragma omp parallel shared (rho, rho_old, rho_inter, dt, dx, nx, courant_factor)
+  {
 
-
-  //-----------------------
-  // Main advection loop
-  //-----------------------
-  while (t < t_end){
+    //-----------------------
+    // Initialise program
+    //-----------------------
     
-    // compute next timestep
-    get_timestep1d();
-
-    // integrate density advection
-    advect1d();
-
-    // move timestep along, write output if necessary
-    t += dt;
-    if (t == t_out[t_out_step]){
-      write_output();
-      t_out_step += 1;
+    initialise1d();
+#pragma omp master
+    {
+      if (verbose) {printf("Courant factor: %g\n", courant_factor);}
     }
-  }
+
+
+    //-----------------------
+    // Main advection loop
+    //-----------------------
+    while (t < t_end){
+      
+      // compute next timestep
+#pragma omp single
+      {
+        get_timestep1d();
+      }
+#pragma omp barrier
+
+      // integrate density advection
+      advect1d();
+
+      // move timestep along, write output if necessary
+#pragma omp single
+      {
+        t += dt;
+        if (t == t_out[t_out_step]){
+          write_output();
+          t_out_step += 1;
+        }
+      }
+    }
+  } // end parallel
 }
 
 
@@ -110,7 +126,7 @@ void run2d()
     // Initialise program
     //-----------------------
     initialise2d();
-#pragma omp master
+#pragma omp single
     {
       if (verbose) {printf("Courant factor: %g\n", courant_factor);}
     }
@@ -122,7 +138,7 @@ void run2d()
     // Main advection loop
     //-----------------------
     while (t < t_end){
-#pragma omp master
+#pragma omp single
       { 
         // compute next timestep
         get_timestep2d(); 
@@ -132,7 +148,7 @@ void run2d()
       // integrate density advection
       advect2d();
 
-#pragma omp master
+#pragma omp single
       {
         // move timestep along, write output if necessary
         t += dt;
@@ -141,7 +157,6 @@ void run2d()
           t_out_step += 1;
         }
       }
-#pragma omp barrier
     }
   } // end parallel region
 }
