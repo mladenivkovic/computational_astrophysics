@@ -627,6 +627,7 @@ void minmod_advection()
         rho_xr = 0.5 * (rho2d_inter[i+1][j] + rho2d_inter[i][j]) - 
           0.5*u*dt*get_minmod_slope_x(i, j, rho2d_inter);
 
+
         rho2d[i][j] = rho2d_inter[i][j] - u*dtdx * (rho_xr -rho_xl);
         
       }
