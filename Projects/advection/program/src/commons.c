@@ -31,8 +31,8 @@ double dx = 0;
 double dy = 0;
 double t = 0;
 double dt = 0;
-double t_out[7] = {1, 2, 5, 10, 20, 50, 100};
-// double t_out[11] = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
+// double t_out[7] = {1, 2, 5, 10, 20, 50, 100};
+double t_out[11] = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
 int t_out_step = 0;
 double courant_factor = 1;
 

@@ -7,8 +7,9 @@
 void set_boundaries();
 void piecewise_constant_advection();
 void piecewise_linear_advection();
-double get_minmod_slope_x(int i, int j);
-double get_minmod_slope_y(int i, int j);
+void minmod_advection();
+double get_minmod_slope_x(int i, int j, double **rho_arr);
+double get_minmod_slope_y(int i, int j, double **rho_arr);
 double VanLeer_limiter1_x(int i, int j);
 double VanLeer_limiter1_y(int i, int j);
 double VanLeer_limiter2_x(int i, int j);
@@ -265,6 +266,16 @@ void advect2d()
       }
 
 
+      else if (method == 2){
+
+        //-----------------------------------------------------
+        // piecewise linear method with minmod slope limiter
+        //-----------------------------------------------------
+        
+        minmod_advection();
+
+      }
+
     }
     else {
       printf("Can't handle v<0. Aborting.\n");
@@ -479,13 +490,13 @@ void piecewise_linear_advection()
     //-----------------
 
 #pragma omp for
-    for (int i = 1; i<nx+3; i++){
+    for (int i = 2; i<nx+2; i++){
       for (int j = 0; j<ny+4; j++){
         // sweep x
         rho_xl = 0.5 * (rho2d_old[i][j] + rho2d_old[i-1][j]) - 
-          0.5*v*dtdx*(rho2d_old[i][j] - rho2d_old[i-1][j]);
+          0.5*u*dtdx*(rho2d_old[i][j] - rho2d_old[i-1][j]);
         rho_xr = 0.5 * (rho2d_old[i+1][j] + rho2d_old[i][j]) - 
-          0.5*v*dtdx*(rho2d_old[i+1][j] - rho2d_old[i][j]);
+          0.5*u*dtdx*(rho2d_old[i+1][j] - rho2d_old[i][j]);
         
         rho2d_inter[i][j] = rho2d_old[i][j] - u*dtdx*(rho_xr - rho_xl);
       }
@@ -493,7 +504,7 @@ void piecewise_linear_advection()
 
 #pragma omp for
     for (int i = 0; i<nx+4; i++){
-      for (int j = 1; j<ny+3; j++){
+      for (int j = 2; j<ny+2; j++){
         // sweep y
         rho_yl = 0.5 * (rho2d_inter[i][j] + rho2d_inter[i][j-1]) - 
           0.5*v*dtdy*(rho2d_inter[i][j] - rho2d_inter[i][j-1]);
@@ -513,7 +524,7 @@ void piecewise_linear_advection()
 
 #pragma omp for
     for (int i = 0; i<nx+4; i++){
-      for (int j = 1; j<ny+3; j++){
+      for (int j = 2; j<ny+2; j++){
         // sweep y
         rho_yl = 0.5 * (rho2d_old[i][j] + rho2d_old[i][j-1]) - 
           0.5*v*dtdy*(rho2d_old[i][j] - rho2d_old[i][j-1]);
@@ -525,13 +536,100 @@ void piecewise_linear_advection()
     }
 
 #pragma omp for
-    for (int i = 1; i<nx+3; i++){
+    for (int i = 2; i<nx+2; i++){
       for (int j = 0; j<ny+4; j++){
         // sweep x
         rho_xl = 0.5 * (rho2d_inter[i][j] + rho2d_inter[i-1][j]) - 
-          0.5*v*dtdx*(rho2d_inter[i][j] - rho2d_inter[i-1][j]);
+          0.5*u*dtdx*(rho2d_inter[i][j] - rho2d_inter[i-1][j]);
         rho_xr = 0.5 * (rho2d_inter[i+1][j] + rho2d_inter[i][j]) - 
-          0.5*v*dtdx*(rho2d_inter[i+1][j] - rho2d_inter[i][j]);
+          0.5*u*dtdx*(rho2d_inter[i+1][j] - rho2d_inter[i][j]);
+        
+        rho2d[i][j] = rho2d_inter[i][j] - u*dtdx*(rho_xr - rho_xl);
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+//=============================
+void minmod_advection()
+//=============================
+{
+
+  //----------------------------------------------------
+  // piecewise linear method with minmod slope limiter
+  //----------------------------------------------------
+
+  double dtdx = dt/dx;
+  double dtdy = dt/dy;
+  double rho_xl, rho_xr, rho_yl, rho_yr;
+
+
+  if (stepcounter % 2 == 0){
+    //-----------------
+    // sweep x first
+    //-----------------
+
+#pragma omp for
+    for (int i = 2; i<nx+2; i++){
+      for (int j = 0; j<ny+4; j++){
+        // sweep x
+        rho_xl = 0.5 * (rho2d_old[i][j] + rho2d_old[i-1][j]) - 
+          0.5*u*dtdx*get_minmod_slope_x(i-1, j, rho2d_old);
+        rho_xr = 0.5 * (rho2d_old[i+1][j] + rho2d_old[i][j]) - 
+          0.5*u*dtdx*get_minmod_slope_x(i, j, rho2d_old);
+        
+        rho2d_inter[i][j] = rho2d_old[i][j] - u*dtdx*(rho_xr - rho_xl);
+      }
+    }
+
+#pragma omp for
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 2; j<ny+2; j++){
+        // sweep y
+        rho_yl = 0.5 * (rho2d_inter[i][j] + rho2d_inter[i][j-1]) - 
+          0.5*v*dtdy*get_minmod_slope_y(i, j-1, rho2d_inter);
+        rho_yr = 0.5 * (rho2d_inter[i][j+1] + rho2d_inter[i][j]) - 
+          0.5*v*dtdy*get_minmod_slope_y(i, j, rho2d_inter);
+        
+        rho2d[i][j] = rho2d_inter[i][j] - v*dtdy*(rho_yr - rho_yl);
+      }
+    }
+  }
+  
+
+  else {
+    //-----------------
+    // sweep y first
+    //-----------------
+
+#pragma omp for
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 2; j<ny+2; j++){
+        // sweep y
+        rho_yl = 0.5 * (rho2d_old[i][j] + rho2d_old[i][j-1]) - 
+          0.5*v*dtdy*get_minmod_slope_y(i, j-1, rho2d_old);
+        rho_yr = 0.5 * (rho2d_old[i][j+1] + rho2d_old[i][j]) - 
+          0.5*v*dtdy*get_minmod_slope_y(i, j, rho2d_old);
+        
+        rho2d_inter[i][j] = rho2d_old[i][j] - v*dtdy*(rho_yr - rho_yl);
+      }
+    }
+
+#pragma omp for
+    for (int i = 2; i<nx+2; i++){
+      for (int j = 0; j<ny+4; j++){
+        // sweep x
+        rho_xl = 0.5 * (rho2d_inter[i][j] + rho2d_inter[i-1][j]) - 
+          0.5*u*dtdx*get_minmod_slope_x(i-1, j, rho2d_inter);
+        rho_xr = 0.5 * (rho2d_inter[i+1][j] + rho2d_inter[i][j]) - 
+          0.5*u*dtdx*get_minmod_slope_x(i, j, rho2d_inter);
         
         rho2d[i][j] = rho2d_inter[i][j] - u*dtdx*(rho_xr - rho_xl);
       }
@@ -550,22 +648,17 @@ void piecewise_linear_advection()
 
 
 
-
-
-
-
-
-//===================================
-double get_minmod_slope_x(int i, int j)
-//===================================
+//========================================================
+double get_minmod_slope_x(int i, int j, double **rho_arr)
+//========================================================
 {  
   //---------------------------------
   // Computes the slope for the 
   // minmod slope limiter
   //---------------------------------
   
-  double a = rho2d_old[i][j] - rho2d_old[i-1][j];
-  double b = rho2d_old[i+1][j] - rho2d_old[i][j];
+  double a = rho_arr[i][j] - rho_arr[i-1][j];
+  double b = rho_arr[i+1][j] - rho_arr[i][j];
 
   a = a/dx;
   b = b/dx;
@@ -586,17 +679,17 @@ double get_minmod_slope_x(int i, int j)
 
 
 
-//===================================
-double get_minmod_slope_y(int i, int j)
-//===================================
+//========================================================
+double get_minmod_slope_y(int i, int j, double **rho_arr)
+//========================================================
 {  
   //---------------------------------
   // Computes the slope for the 
   // minmod slope limiter
   //---------------------------------
   
-  double a = rho2d_old[i][j] - rho2d_old[i][j-1];
-  double b = rho2d_old[i][j+1] - rho2d_old[i][j];
+  double a = rho_arr[i][j] - rho_arr[i][j-1];
+  double b = rho_arr[i][j+1] - rho_arr[i][j];
 
   a = a/dy;
   b = b/dy;
