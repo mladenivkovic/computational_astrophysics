@@ -1,9 +1,13 @@
 // parameters for advection
 verbose = 1;
+density_profile = 1;
+method = 0;
+t_end = 10;
+use_2d = 0;
 nx = 100;
-t_end = 5;
-density_profile = 0;
-method = 1;
+ny = 100;
+u = 1;
+v = 1;
 courant_factor = 0.9;
 
 // density profiles:

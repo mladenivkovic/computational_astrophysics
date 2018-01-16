@@ -10,15 +10,19 @@
 #include <omp.h>
 #include "commons.h"
 #include "io.h"
-#include "advection.h"
+#include "advection1d.h"
+#include "advection2d.h"
+
+
+
 
 
 
 //=====================================
 // functions defined below
 //=====================================
-void initialise(int argc, char *argv[]);
-
+void run1d();
+void run2d();
 
 
 
@@ -32,35 +36,18 @@ int main(int argc, char *argv[])
 
   printf("Started advection program.\n");
  
-
-  //-----------------------
-  // Initialise program
-  //-----------------------
-  initialise(argc, argv);
-  if (verbose) {printf("Courant factor: %g\n", courant_factor);}
+  //--------------------
+  //read parameters
+  //--------------------
+  readparams(argc, argv);
 
 
-  //-----------------------
-  // Main advection loop
-  //-----------------------
-  while (t < t_end){
-    
-    // compute next timestep
-    get_timestep();
-
-    // integrate density advection
-    advect();
-
-    // move timestep along, write output if necessary
-    t += dt;
-    if (t == t_out[t_out_step]){
-      write_output();
-      t_out_step += 1;
-    }
-
-    // t = t_end; // stop at first step
+  if (use_2d){
+    run2d();
   }
-
+  else{
+    run1d();
+  }
 
 
 
@@ -73,94 +60,92 @@ int main(int argc, char *argv[])
 
 
 
-
-
-
-
-
-//=======================================
-void initialise(int argc, char *argv[])
-//=======================================
+//==========================
+void run1d()
+//==========================
 {
-  //----------------------
-  // Set everything up.
-  //----------------------
+  //-----------------------
+  // Initialise program
+  //-----------------------
+  
+  initialise1d();
+  if (verbose) {printf("Courant factor: %g\n", courant_factor);}
 
 
+  //-----------------------
+  // Main advection loop
+  //-----------------------
+  while (t < t_end){
+    
+    // compute next timestep
+    get_timestep1d();
 
-  //--------------------
-  //read parameters
-  //--------------------
-  readparams(argc, argv);
+    // integrate density advection
+    advect1d();
 
-
-  //-------------------------
-  // initialize variables
-  //-------------------------
-
-  if (nx == 0){
-    printf("Got nx = 0, can't work with that. quitting.\n");
-    exit(1);
-  }
-
-  u = malloc((nx+4)*sizeof(double));
-  u_old = malloc((nx+4)*sizeof(double));
-  dx = 1.0/((double) nx);
-  v = 1;
-
-
-
-  //------------------------------
-  // Initialise density profile
-  //------------------------------
-
-  if (density_profile == 0){
-    //--------------------------------------------
-    printf("Using step density profile.\n");
-    //--------------------------------------------
-    for (int i = 0; i<(nx)+4; i++){
-      if (i*dx <= 0.3){
-        u[i] = 1;
-      }
-      else if (i*dx <= 0.6){
-        u[i] = 2;
-      }
-      else{
-        u[i] = 1;
-      }
+    // move timestep along, write output if necessary
+    t += dt;
+    if (t == t_out[t_out_step]){
+      write_output();
+      t_out_step += 1;
     }
   }
-  else if (density_profile == 1){
-    //--------------------------------------------
-    printf("Using linear step density profile.\n");
-    //--------------------------------------------
-    for (int i = 0; i<(nx+2); i++){
-      if (i*dx <= 0.3){
-        u[i] = 1;
-      }
-      else if (i*dx <= 0.6){
-        u[i] = 2+1.7*(i*dx-0.3);
-      }
-      else{
-        u[i] = 1;
-      }
-    }
-  }
-  else if (density_profile == 2){
-    //--------------------------------------------
-    printf("Using gauss density profile.\n");
-    //--------------------------------------------
-    for (int i = 0; i<(nx+2); i++){
-      u[i] = 1 + exp(-pow((i*dx - 0.5), 2)/0.1);
-    }
-  }
-  else {
-    printf("Not recognized density_profile = %d\n", density_profile);
-  }
-
-  u[0] = u[nx];
-  u[1] = u[nx+1];
-  u[nx+2] = u[2];
-  u[nx+3] = u[3];
 }
+
+
+
+
+
+
+//==========================
+void run2d()
+//==========================
+{
+  
+
+#pragma omp parallel
+  {
+
+    //-----------------------
+    // Initialise program
+    //-----------------------
+    initialise2d();
+#pragma omp master
+    {
+      if (verbose) {printf("Courant factor: %g\n", courant_factor);}
+    }
+
+    
+
+
+    //-----------------------
+    // Main advection loop
+    //-----------------------
+    while (t < t_end){
+#pragma omp master
+      { 
+        // compute next timestep
+        get_timestep2d(); 
+      }
+#pragma omp barrier
+
+      // integrate density advection
+      advect2d();
+
+#pragma omp master
+      {
+        // move timestep along, write output if necessary
+        t += dt;
+        if (t == t_out[t_out_step]){
+          write_output();
+          t_out_step += 1;
+        }
+      }
+#pragma omp barrier
+    }
+  } // end parallel region
+}
+
+
+
 

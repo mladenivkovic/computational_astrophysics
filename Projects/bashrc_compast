@@ -65,6 +65,7 @@ echo "Importing computational astrophysics stuff."
     # Script shortcuts
     #-------------------------
 
+    alias rmout='rm output_* plot_*'
 
 
 
@@ -85,4 +86,6 @@ echo "Importing computational astrophysics stuff."
 
 
     alias adv='advection advection-params'
-    alias advp='advection advection-params &&  plot_density.py && eog plot*'
+    alias advp='advection advection-params && postprocess_advection1d.py  && eog plot*'
+    alias advp2d='advection advection-params && postprocess_advection2d.py  && eog plot*'
+

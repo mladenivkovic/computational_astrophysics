@@ -23,17 +23,21 @@ extern int method;          // which method to use
                             // 3 : piecewise linear with VanLeer slope limiter
 
 extern double t_end;        // time when to end
+extern int use_2d;          // use 2d instead of 1d advection
 
+extern double u;        // global velocity in x direction
+extern double v;        // global velocity in y direction
 
 
 // global params
 extern int nx;          // number of cells
+extern int ny;          // number of cells
 extern double dx;       // cell width
+extern double dy;       // cell height
 extern double t;        // current time
 extern double dt;       // time step
 extern double t_out[];  // next output time 
 extern int t_out_step;  // step for output time
-extern double v;        // global velocity
 extern double courant_factor; // factor for courant condition; Must be <= 1
 
 
@@ -41,7 +45,10 @@ extern double courant_factor; // factor for courant condition; Must be <= 1
 //ARRAYS
 //---------------
 
-extern double *u;
-extern double *u_old;
+extern double *rho;
+extern double *rho_old;
+
+extern double **rho2d;
+extern double **rho2d_old;
 
 

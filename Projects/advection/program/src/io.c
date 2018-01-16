@@ -70,9 +70,6 @@ void readparams(int argc, char *argv[])
       // atoi/atof: convert string to integer/float
       // from stdlib.h
       } 
-      else if (strcmp(varname, "nx") == 0){
-        nx = atoi(varvalue);
-      }
       else if (strcmp(varname, "density_profile")==0){
         density_profile = atoi(varvalue);
       }
@@ -82,9 +79,25 @@ void readparams(int argc, char *argv[])
       else if (strcmp(varname, "t_end")==0){
         t_end = atof(varvalue);
       }
+      else if (strcmp(varname, "use_2d")==0){
+        use_2d = atoi(varvalue);
+      }
+      else if (strcmp(varname, "u")==0){
+        u = atof(varvalue);
+      }
+      else if (strcmp(varname, "v")==0){
+        v = atof(varvalue);
+      }
+      else if (strcmp(varname, "nx") == 0){
+        nx = atoi(varvalue);
+      }
+      else if (strcmp(varname, "ny") == 0){
+        ny = atoi(varvalue);
+      }
       else if (strcmp(varname, "courant_factor")==0){
         courant_factor = atof(varvalue);
       }
+
       else if (strcmp(varname, "//")==0) {
         // ignore comments
         continue;
@@ -99,11 +112,7 @@ void readparams(int argc, char *argv[])
     }
 
     fclose(params);
-
-
   }
-
-
 }
 
 
@@ -179,6 +188,11 @@ void write_output()
   sprintf(time_str, "%06.2f", t);
   strcat(filename, time_str);
 
+  
+  if (use_2d){
+    strcat(filename, "-2d");
+  }
+
   // finish up
   strcat(filename, ".dat");
 
@@ -190,9 +204,19 @@ void write_output()
   
   FILE *outfilep = fopen(filename, "w");
   
-  fprintf(outfilep, "%15.7g\n", t);
-  for (int i = 0; i<nx; i++){
-    fprintf(outfilep, "%15.7g\n", u[i+1] );
+  if (!use_2d){
+    fprintf(outfilep, "%15.7g\n", t);
+    for (int i = 0; i<nx; i++){
+      fprintf(outfilep, "%15.7g\n", rho[i+2] );
+    }
+  }
+  else{
+    for (int j = 0; j<ny; j++){
+      for (int i = 0; i<nx; i++){
+        fprintf(outfilep, "%15.7g", rho2d[i+2][j+2]);
+      }
+      fprintf(outfilep, "\n");
+    }
   }
 
   fclose(outfilep);

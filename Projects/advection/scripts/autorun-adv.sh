@@ -114,7 +114,7 @@ for method in pwconst pwlin minmod VanLeer; do
         # run_simulations "$param" "$nx" "$methodnumber"
 
         # create plots
-        plot_density.py
+        postprocess_advection1d.py
 
         cd ..
     done

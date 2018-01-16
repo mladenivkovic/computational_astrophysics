@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "commons.h"
+#include "io.h"
 
 
 double get_pwconst_flux(int i);
@@ -12,15 +13,113 @@ double VanLeer_limiter1(int i);
 double VanLeer_limiter2(int i);
 
 
+
+
+
+
+
+//=======================================
+void initialise1d()
+//=======================================
+{
+  //----------------------
+  // Set everything up.
+  //----------------------
+
+
+
+  //-------------------------
+  // initialize variables
+  //-------------------------
+
+  if (nx == 0){
+    printf("Got nx = 0, can't work with that. quitting.\n");
+    exit(1);
+  }
+
+  rho = malloc((nx+4)*sizeof(double));
+  rho_old = malloc((nx+4)*sizeof(double));
+  dx = 1.0/((double) nx);
+  u = 1;
+
+
+
+  //------------------------------
+  // Initialise density profile
+  //------------------------------
+
+  if (density_profile == 0){
+    //--------------------------------------------
+    printf("Using step density profile.\n");
+    //--------------------------------------------
+    for (int i = 0; i<(nx)+4; i++){
+      if (i*dx <= 0.3){
+        rho[i] = 1;
+      }
+      else if (i*dx <= 0.6){
+        rho[i] = 2;
+      }
+      else{
+        rho[i] = 1;
+      }
+    }
+  }
+  else if (density_profile == 1){
+    //--------------------------------------------
+    printf("Using linear step density profile.\n");
+    //--------------------------------------------
+    for (int i = 0; i<(nx+2); i++){
+      if (i*dx <= 0.3){
+        rho[i] = 1;
+      }
+      else if (i*dx <= 0.6){
+        rho[i] = 2+1.7*(i*dx-0.3);
+      }
+      else{
+        rho[i] = 1;
+      }
+    }
+  }
+  else if (density_profile == 2){
+    //--------------------------------------------
+    printf("Using gauss density profile.\n");
+    //--------------------------------------------
+    for (int i = 0; i<(nx+2); i++){
+      rho[i] = 1 + exp(-pow((i*dx - 0.5), 2)/0.1);
+    }
+  }
+  else {
+    printf("Not recognized density_profile = %d\n", density_profile);
+  }
+
+  rho[0] = rho[nx];
+  rho[1] = rho[nx+1];
+  rho[nx+2] = rho[2];
+  rho[nx+3] = rho[3];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //=============================
-void get_timestep()
+void get_timestep1d()
 //=============================
 {
   //--------------------------------------------
   // Compute the next timestep according to CFL
   //--------------------------------------------
 
-  dt = courant_factor*fabs(dx / v);
+  dt = courant_factor*fabs(dx / u);
 
   // check if you're jumping over output time step
   if ( t + dt >= t_out[t_out_step] ){
@@ -42,7 +141,7 @@ void get_timestep()
 
 
 //================
-void advect()
+void advect1d()
 //================
 {
   //-----------------------------------------
@@ -59,7 +158,7 @@ void advect()
     // store old values
 #pragma omp for
     for (int i = 0; i<nx+4; i++){
-      u_old[i] = u[i];
+      rho_old[i] = rho[i];
     }
 
 
@@ -71,10 +170,10 @@ void advect()
       //--------------------------------
       // piecewise constant method
       //--------------------------------
-      double a = dt/dx * v;
+      double a = dt/dx * u;
 #pragma omp for
       for (int i = 2; i<nx+2; i++){
-        u[i] = u_old[i] + a*get_pwconst_flux(i);
+        rho[i] = rho_old[i] + a*get_pwconst_flux(i);
       }
     }
 
@@ -83,22 +182,22 @@ void advect()
       //--------------------------------
       // piecewise linear method
       //--------------------------------
-//       double a1 = v * dt / (4 * dx);
+//       double a1 = u * dt / (4 * dx);
 //       double a2 = a1 * a1*4;
 //       double f1 = 0, f2 = 0;
 // #pragma omp for
 //       for (int i = 2; i<nx+2; i++){
 //         get_pwlin_flux(i, &f1, &f2);
-//         u[i] = u_old[i] - a1*f1 + a2*f2;
-      double c = v * dt / dx;
+//         rho[i] = rho_old[i] - a1*f1 + a2*f2;
+      double c = u * dt / dx;
       double slope_l, slope_r;
      
-      if (v > 0) {
+      if (u > 0) {
 #pragma omp for
         for (int i = 2; i<nx+2; i++){
           slope_l = get_slope(i-1);
           slope_r = get_slope(i);
-          u[i] = u_old[i] - c *(u_old[i] - u_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - v * dt);
+          rho[i] = rho_old[i] - c *(rho_old[i] - rho_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
         }
       }
       else{
@@ -106,7 +205,7 @@ void advect()
         for (int i = 2; i<nx+2; i++){
           slope_l = get_slope(i);
           slope_r = get_slope(i+1);
-          u[i] = u_old[i] - c *(u_old[i+1] - u_old[i]) - 0.5*c*(slope_r - slope_l)*(dx - v * dt);
+          rho[i] = rho_old[i] - c *(rho_old[i+1] - rho_old[i]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
         }
       }
     }
@@ -118,15 +217,15 @@ void advect()
       // piecewise linear method with minmod slope limiter
       //-----------------------------------------------------
 
-      double c = v * dt / dx;
+      double c = u * dt / dx;
       double slope_l, slope_r;
      
-      if (v > 0) {
+      if (u > 0) {
 #pragma omp for
         for (int i = 2; i<nx+2; i++){
           slope_l = get_minmod_slope(i-1);
           slope_r = get_minmod_slope(i);
-          u[i] = u_old[i] - c *(u_old[i] - u_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - v * dt);
+          rho[i] = rho_old[i] - c *(rho_old[i] - rho_old[i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
         }
       }
       else{
@@ -134,7 +233,7 @@ void advect()
         for (int i = 2; i<nx+2; i++){
           slope_l = get_minmod_slope(i);
           slope_r = get_minmod_slope(i+1);
-          u[i] = u_old[i] - c *(u_old[i+1] - u_old[i]) - 0.5*c*(slope_r - slope_l)*(dx - v * dt);
+          rho[i] = rho_old[i] - c *(rho_old[i+1] - rho_old[i]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
         }
       }
     }
@@ -148,22 +247,22 @@ void advect()
       //-----------------------------------------------------
 
       double fluxleft, fluxright; 
-      double c = dt / dx * v;
+      double c = dt / dx * u;
 
-      if (v > 0) {
+      if (u > 0) {
 #pragma omp for
         for (int i = 2; i<nx+2; i++){
-          fluxleft = v * u_old[i-1] + 0.5*v*(1 - c) * VanLeer_limiter1(i) * (u_old[i]-u_old[i-1]);
-          fluxright = v * u_old[i] + 0.5*v*(1 - c) * VanLeer_limiter1(i+1) * (u_old[i+1]-u_old[i]);
-          u[i] = u_old[i] + c * (fluxleft - fluxright);
+          fluxleft = u * rho_old[i-1] + 0.5*u*(1 - c) * VanLeer_limiter1(i) * (rho_old[i]-rho_old[i-1]);
+          fluxright = u * rho_old[i] + 0.5*u*(1 - c) * VanLeer_limiter1(i+1) * (rho_old[i+1]-rho_old[i]);
+          rho[i] = rho_old[i] + c * (fluxleft - fluxright);
         }
       }
       else{
 #pragma omp for
         for (int i = 2; i<nx+2; i++){
-          fluxleft = v * u_old[i] - 0.5*v*(1 + c) * VanLeer_limiter2(i) * (u_old[i]-u_old[i-1]);
-          fluxright = v * u_old[i+1] - 0.5*v*(1 + c) * VanLeer_limiter2(i+1) * (u_old[i+1]-u_old[i]);
-          u[i] = u_old[i] + c * (fluxleft - fluxright);
+          fluxleft = u * rho_old[i] - 0.5*u*(1 + c) * VanLeer_limiter2(i) * (rho_old[i]-rho_old[i-1]);
+          fluxright = u * rho_old[i+1] - 0.5*u*(1 + c) * VanLeer_limiter2(i+1) * (rho_old[i+1]-rho_old[i]);
+          rho[i] = rho_old[i] + c * (fluxleft - fluxright);
         }
       }
     }
@@ -173,10 +272,10 @@ void advect()
 
 
   //implement periodic boundary condition
-  u[0] = u[nx];
-  u[1] = u[nx+1];
-  u[nx+2] = u[2];
-  u[nx+3] = u[3];
+  rho[0] = rho[nx];
+  rho[1] = rho[nx+1];
+  rho[nx+2] = rho[2];
+  rho[nx+3] = rho[3];
 
 
 
@@ -196,11 +295,11 @@ double get_pwconst_flux(int i)
 
   double f = 0;
 
-  if (v < 0){
-    f = (u_old[i]-u_old[i+1]);
+  if (u < 0){
+    f = (rho_old[i]-rho_old[i+1]);
   }
   else{
-    f = (u_old[i-1]-u_old[i]);
+    f = (rho_old[i-1]-rho_old[i]);
   }
 
   return (f);
@@ -216,22 +315,32 @@ double get_pwconst_flux(int i)
 void get_pwlin_flux(int i, double *flux1, double *flux2)
 //========================================================
 {
-  if (v < 0){
-    *flux1 = (u_old[i-1] + 3*u_old[i] - 5*u_old[i+1] + u_old[i+2]);
-    *flux2 = (u_old[i-1] - u_old[i] - u_old[i+1] + u_old[i+2]);
+  //-----------------------------------
+  // Get the flux for piecewise linear 
+  // method.
+  //-----------------------------------
+  if (u < 0){
+    *flux1 = (rho_old[i-1] + 3*rho_old[i] - 5*rho_old[i+1] + rho_old[i+2]);
+    *flux2 = (rho_old[i-1] - rho_old[i] - rho_old[i+1] + rho_old[i+2]);
   }
   else{
-    *flux1 = (u_old[i+1] + 3*u_old[i] - 5*u_old[i-1] + u_old[i-2]);
-    *flux2 = (u_old[i+1] - u_old[i] - u_old[i-1] + u_old[i-2]);
+    *flux1 = (rho_old[i+1] + 3*rho_old[i] - 5*rho_old[i-1] + rho_old[i-2]);
+    *flux2 = (rho_old[i+1] - rho_old[i] - rho_old[i-1] + rho_old[i-2]);
   }
 }
 
 
 
 //===========================
-double get_slope(int i){
+double get_slope(int i)
 //===========================
-  double slope = u_old[i+1]-u_old[i-1];
+{
+  //-------------------------------------------
+  // Get centered slope for piecewise linear
+  // method (Fromm’s method)
+  //-------------------------------------------
+  
+  double slope = rho_old[i+1]-rho_old[i-1];
   slope = slope/(2 * dx);
   return (slope);
 }
@@ -242,16 +351,17 @@ double get_slope(int i){
 
 
 //================================
-double get_minmod_slope(int i){
+double get_minmod_slope(int i)
 //================================
+{
   
   //---------------------------------
   // Computes the slope for the 
   // minmod slope limiter
   //---------------------------------
   
-  double a = u_old[i] - u_old[i-1];
-  double b = u_old[i+1] - u_old[i];
+  double a = rho_old[i] - rho_old[i-1];
+  double b = rho_old[i+1] - rho_old[i];
 
   a = a/dx;
   b = b/dx;
@@ -282,13 +392,13 @@ double VanLeer_limiter1(int i)
 {
   //---------------------------------------
   // computes the Van Leer flux limiter
-  // for v >= 0
+  // for u >= 0
   //---------------------------------------
 
 
 
-  if (u_old[i]-u_old[i-1] != 0){
-    double r = (u_old[i-1] - u_old[i-2])/(u_old[i]-u_old[i-1]);
+  if (rho_old[i]-rho_old[i-1] != 0){
+    double r = (rho_old[i-1] - rho_old[i-2])/(rho_old[i]-rho_old[i-1]);
     double absr = fabs(r);
     double limiter = (r + absr)/(1 + absr);
 
@@ -309,11 +419,11 @@ double VanLeer_limiter2(int i)
 {
   //---------------------------------------
   // computes the Van Leer flux limiter
-  // for v < 0
+  // for u < 0
   //---------------------------------------
 
-  if (u_old[i]-u_old[i-1] != 0){
-    double r = (u_old[i+1] - u_old[i])/(u_old[i]-u_old[i-1]);
+  if (rho_old[i]-rho_old[i-1] != 0){
+    double r = (rho_old[i+1] - rho_old[i])/(rho_old[i]-rho_old[i-1]);
     double absr = fabs(r);
     double limiter = (r + absr)/(1 + absr);
     return (limiter);
