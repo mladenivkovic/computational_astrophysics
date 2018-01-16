@@ -331,11 +331,11 @@ double get_slope(int i)
 {
   //-------------------------------------------
   // Get centered slope for piecewise linear
-  // method (Fromm’s method)
+  // method (Lax Wendroff’s method)
   //-------------------------------------------
   
-  double slope = rho_old[i+1]-rho_old[i-1];
-  slope = slope/(2 * dx);
+  double slope = rho_old[i+1]-rho_old[i];
+  slope = slope/dx;
   return (slope);
 }
 

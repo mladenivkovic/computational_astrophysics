@@ -39,6 +39,7 @@ extern double dt;       // time step
 extern double t_out[];  // next output time 
 extern int t_out_step;  // step for output time
 extern double courant_factor; // factor for courant condition; Must be <= 1
+extern int stepcounter;
 
 
 //---------------
@@ -50,6 +51,7 @@ extern double *rho_inter;
 extern double *rho_old;
 
 extern double **rho2d;
+extern double **rho2d_inter;
 extern double **rho2d_old;
 
 

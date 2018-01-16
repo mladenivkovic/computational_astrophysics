@@ -5,10 +5,8 @@
 #include "io.h"
 
 void set_boundaries();
-double get_pwconst_flux_x(int i, int j);
-double get_pwconst_flux_y(int i, int j);
-double get_slope_x(int i, int j);
-double get_slope_y(int i, int j);
+void piecewise_constant_advection();
+void piecewise_linear_advection();
 double get_minmod_slope_x(int i, int j);
 double get_minmod_slope_y(int i, int j);
 double VanLeer_limiter1_x(int i, int j);
@@ -41,18 +39,25 @@ void initialise2d()
     exit(1);
   }
 
-  rho2d = malloc((nx+4)*sizeof(double *));
-  rho2d_old = malloc((nx+4)*sizeof(double));
-
-  for ( int i = 0; i<nx+4; i++ ){
-    double *row = calloc((ny+4), sizeof(double));
-    double *row2 = malloc((ny+4)*sizeof(double));
-    rho2d[i] = row;
-    rho2d_old[i] = row2;
+#pragma omp single
+  {
+    dx = 1.0/((double) nx + 1);
+    dy = 1.0/((double) ny + 1);
+    rho2d = malloc((nx+4)*sizeof(double *));
+    rho2d_old = malloc((nx+4)*sizeof(double *));
+    rho2d_inter = malloc((nx+4)*sizeof(double *));
   }
 
-  dx = 1.0/((double) nx + 1);
-  dy = 1.0/((double) ny + 1);
+#pragma omp barrier
+
+#pragma omp for
+  for ( int i = 0; i<nx+4; i++ ){
+    rho2d[i] = calloc((ny+4), sizeof(double));
+    rho2d_old[i] = malloc((ny+4)*sizeof(double));
+    rho2d_inter[i] = malloc((ny+4)*sizeof(double));
+  }
+
+
   // u = 1;
   // v = 1;
 
@@ -70,8 +75,8 @@ void initialise2d()
       //--------------------------------------------
     }
 #pragma omp for
-    for (int i = 0; i<(nx)+4; i++){
-      for (int j = 0; j<(ny)+4; j++){
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 0; j<ny+4; j++){
 
         if (i*dx <= 0.3){
           rho2d[i][j] += 1;
@@ -184,13 +189,15 @@ void get_timestep2d()
   //--------------------------------------------
 
 
-  dt = 0.25*courant_factor* 1/(fabs(u)/dx + fabs(v)/dy);
+  dt = courant_factor/(fabs(u)/dx + fabs(v)/dy);
   // dt = 0.5*courant_factor *dx/ (sqrt(u*u + v*v));
 
   // check if you're jumping over output time step
   if ( t + dt >= t_out[t_out_step] ){
     dt = t_out[t_out_step] - t;
   }
+
+  stepcounter += 1;
 
   // if (verbose) {
   //   printf("dt =%6g, t= %6g, dx= %6g, dy= %6g\n", dt, t+dt, dx, dy);
@@ -229,129 +236,111 @@ void advect2d()
 
 
 
+  double dtdx = dt/dx;
+  double dtdy = dt/dy;
+  double slope_lx, slope_rx, slope_ly, slope_ry;
 
 
 
-  //---------------------- 
-  // Loop over cells
-  //---------------------- 
+
+
   
-  if (method == 0){
-    //--------------------------------
-    // piecewise constant method
-    //--------------------------------
-    double c = dt/dx ;
-#pragma omp for
-    for (int i = 2; i<nx+2; i++){
-      for (int j = 2; j<ny+2; j++){
-        rho2d[i][j] = rho2d_old[i][j] + 
-          c*u*get_pwconst_flux_x(i, j) + 
-          c*v*get_pwconst_flux_y(i, j);
+  if (u >= 0) {
+    if (v >= 0){
+      
+      if (method == 0){
+        
+        //--------------------------------
+        // piecewise constant method
+        //--------------------------------
+        piecewise_constant_advection();
       }
-    }
-  }
 
-
-
-
-  else if (method == 1){
-    //--------------------------------
-    // piecewise linear method
-    //--------------------------------
-    double dtdx = dt / dx;
-    double dtdy = dt / dy;
-    double slope_lx, slope_rx, slope_ly, slope_ry;
-   
-    if (u > 0) {
-      if (v > 0) {
-
-#pragma omp for
-        for (int i = 2; i<nx+2; i++){
-          for (int j = 2; j<ny+2; j++){
-
-            slope_lx = get_slope_x(i-1, j);
-            slope_rx = get_slope_x(i, j);
-            slope_ly = get_slope_y(i, j-1);
-            slope_ry = get_slope_y(i, j);
-
-            rho2d[i][j] = rho2d_old[i][j] - 
-              // u * drho/dx
-              u*dtdx *(rho2d_old[i][j] - rho2d_old[i-1][j]) - 
-              0.5*u*dtdx*(slope_rx - slope_lx)*(dx - u * dt)-
-              // v * drho/dy
-              v*dtdy *(rho2d_old[i][j] - rho2d_old[i][j-1]) - 
-              0.5*v*dtdy*(slope_ry - slope_ly)*(dy - v * dt) ;
-          }
-        }
+      else if (method == 1){
+        
+        //--------------------------------
+        // piecewise linear method
+        //--------------------------------
+        piecewise_linear_advection();
       }
-      else {
-        printf("Can't handle v<0. Aborting.\n");
-        exit(2);
-      }
+
+
     }
     else {
-      printf("Can't handle u<0. Aborting.\n");
+      printf("Can't handle v<0. Aborting.\n");
       exit(2);
     }
   }
-
-
-
-  else if (method == 2){
-    //-----------------------------------------------------
-    // piecewise linear method with minmod slope limiter
-    //-----------------------------------------------------
-
-    double c = u * dt / dx;
-    double slope_l, slope_r;
-   
-    if (u > 0) {
-#pragma omp for
-      for (int i = 2; i<nx+2; i++){
-        slope_l = get_minmod_slope(i-1);
-        slope_r = get_minmod_slope(i);
-        rho2d[i][i] = rho2d_old[i][i] - c *(rho2d_old[i][i] - rho2d_old[i][i-1]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
-      }
-    }
-    else{
-#pragma omp for
-      for (int i = 2; i<nx+2; i++){
-        slope_l = get_minmod_slope(i);
-        slope_r = get_minmod_slope(i+1);
-        rho2d[i][i] = rho2d_old[i][i] - c *(rho2d_old[i][i+1] - rho2d_old[i][i]) - 0.5*c*(slope_r - slope_l)*(dx - u * dt);
-      }
-    }
+  else {
+    printf("Can't handle u<0. Aborting.\n");
+    exit(2);
   }
 
 
 
 
-  else if (method == 3){
-    //-----------------------------------------------------
-    // piecewise linear method with VanLeer flux limiter
-    //-----------------------------------------------------
 
-    double fluxleft, fluxright; 
-    double c = dt / dx * u;
-
-    if (u > 0) {
-#pragma omp for
-      for (int i = 2; i<nx+2; i++){
-        fluxleft = u * rho2d_old[i][i-1] + 0.5*u*(1 - c) * VanLeer_limiter1(i) * (rho2d_old[i][i]-rho2d_old[i][i-1]);
-        fluxright = u * rho2d_old[i][i] + 0.5*u*(1 - c) * VanLeer_limiter1(i+1) * (rho2d_old[i][i+1]-rho2d_old[i][i]);
-        rho2d[i][i] = rho2d_old[i][i] + c * (fluxleft - fluxright);
-      }
-    }
-    else{
-#pragma omp for
-      for (int i = 2; i<nx+2; i++){
-        fluxleft = u * rho2d_old[i][i] - 0.5*u*(1 + c) * VanLeer_limiter2(i) * (rho2d_old[i][i]-rho2d_old[i][i-1]);
-        fluxright = u * rho2d_old[i][i+1] - 0.5*u*(1 + c) * VanLeer_limiter2(i+1) * (rho2d_old[i][i+1]-rho2d_old[i][i]);
-        rho2d[i][i] = rho2d_old[i][i] + c * (fluxleft - fluxright);
-      }
-    }
-  }
-
+//   else if (method == 2){
+//     //-----------------------------------------------------
+//     // piecewise linear method with minmod slope limiter
+//     //-----------------------------------------------------
+//
+//
+//     if (u >= 0) {
+//       if (v >= 0) {
+// #pragma omp for
+//       for (int i = 2; i<nx+2; i++){
+//         for (int j = 2; j<ny+2; j++){
+//           slope_lx = get_minmod_slope_x(i-1, j);
+//           slope_rx = get_minmod_slope_x(i, j);
+//           slope_ly = get_minmod_slope_y(i, j-1);
+//           slope_ry = get_minmod_slope_y(i, j);
+//           rho2d[i][j] = rho2d_old[i][j] -
+//             u*dtdx *(rho2d_old[i][j] - rho2d_old[i-1][j]) - 0.5*u*dtdx*(slope_rx - slope_lx)*(dx - u * dt) -
+//             v*dtdy *(rho2d_old[i][j] - rho2d_old[i][j-1]) - 0.5*v*dtdy*(slope_ry - slope_ly)*(dy - v * dt);
+//         }
+//       }
+//     }
+//       else {
+//         printf("Can't handle v<0. Aborting.\n");
+//         exit(2);
+//       }
+//     }
+//     else {
+//       printf("Can't handle u<0. Aborting.\n");
+//       exit(2);
+//     }
+//   }
+//
+//
+//
+//
+//   else if (method == 3){
+//     //-----------------------------------------------------
+//     // piecewise linear method with VanLeer flux limiter
+//     //-----------------------------------------------------
+//
+//     double fluxleft, fluxright;
+//     double c = dt / dx * u;
+//
+//     if (u > 0) {
+// #pragma omp for
+//       for (int i = 2; i<nx+2; i++){
+//         fluxleft = u * rho2d_old[i][i-1] + 0.5*u*(1 - c) * VanLeer_limiter1(i) * (rho2d_old[i][i]-rho2d_old[i][i-1]);
+//         fluxright = u * rho2d_old[i][i] + 0.5*u*(1 - c) * VanLeer_limiter1(i+1) * (rho2d_old[i][i+1]-rho2d_old[i][i]);
+//         rho2d[i][i] = rho2d_old[i][i] + c * (fluxleft - fluxright);
+//       }
+//     }
+//     else{
+// #pragma omp for
+//       for (int i = 2; i<nx+2; i++){
+//         fluxleft = u * rho2d_old[i][i] - 0.5*u*(1 + c) * VanLeer_limiter2(i) * (rho2d_old[i][i]-rho2d_old[i][i-1]);
+//         fluxright = u * rho2d_old[i][i+1] - 0.5*u*(1 + c) * VanLeer_limiter2(i+1) * (rho2d_old[i][i+1]-rho2d_old[i][i]);
+//         rho2d[i][i] = rho2d_old[i][i] + c * (fluxleft - fluxright);
+//       }
+//     }
+//   }
+//
 
   set_boundaries();
 
@@ -370,7 +359,7 @@ void set_boundaries()
   //------------------------------
   
 #pragma omp for
-  for (int i = 2; i<nx+2; i++){
+  for (int i = 0; i<nx+4; i++){
     // for all x, copy boundary y
     rho2d[i][0] = rho2d[i][ny];
     rho2d[i][1] = rho2d[i][ny+1];
@@ -379,13 +368,15 @@ void set_boundaries()
   }
 
 #pragma omp for
-  for (int j = 2; j<ny+2; j++){
+  for (int j = 0; j<ny+4; j++){
     // for all y, copy boundary x
     rho2d[0][j] = rho2d[nx][j];
     rho2d[1][j] = rho2d[nx+1][j];
     rho2d[nx+2][j] = rho2d[2][j];
     rho2d[nx+3][j] = rho2d[3][j];
   }
+
+
 }
 
 
@@ -399,91 +390,165 @@ void set_boundaries()
 
 
 
-
-
-//=========================================
-double get_pwconst_flux_x(int i, int j)
-//=========================================
+//========================================
+void piecewise_constant_advection()
+//========================================
 {
-  //---------------------------------------
-  // computes the flux for the piecewise
-  // constant method in x direction
-  //---------------------------------------
+  //--------------------------------
+  // piecewise constant method
+  //--------------------------------
 
-  double f = 0;
+  double dtdx = dt/dx;
+  double dtdy = dt/dy;
 
-  if (u < 0){
-    f = (rho2d_old[i][j]-rho2d_old[i+1][j]);
+  if (stepcounter % 2 == 0){
+    //-----------------
+    // sweep x first
+    //-----------------
+
+#pragma omp for
+    for (int i = 1; i<nx+3; i++){
+      for (int j = 0; j<ny+4; j++){
+        //sweep x
+        rho2d_inter[i][j] = rho2d_old[i][j] + 
+          dtdx*u*(rho2d_old[i-1][j]-rho2d_old[i][j]);
+      }
+    }
+
+#pragma omp for
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 1; j<ny+3; j++){
+        //sweep y
+        rho2d[i][j] = rho2d_inter[i][j] + 
+          dtdy*v*(rho2d_inter[i][j-1]-rho2d_inter[i][j]);
+      }
+    }
   }
+
+
   else{
-    f = (rho2d_old[i-1][j]-rho2d_old[i][j]);
+    //-----------------
+    // sweep y first
+    //-----------------
+    
+#pragma omp for
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 1; j<ny+3; j++){
+        //sweep y
+        rho2d_inter[i][j] = rho2d_old[i][j] + 
+          dtdy*v*(rho2d_old[i][j-1]-rho2d_old[i][j]);
+      }
+    }
+
+#pragma omp for
+    for (int i = 1; i<nx+3; i++){
+      for (int j = 0; j<ny+4; j++){
+        //sweep x
+        rho2d[i][j] = rho2d_inter[i][j] + 
+          dtdx*u*(rho2d_inter[i-1][j]-rho2d_inter[i][j]);
+      }
+    }
   }
 
-  return (f);
 }
 
 
 
 
-//=========================================
-double get_pwconst_flux_y(int i, int j)
-//=========================================
+
+
+
+
+
+//========================================
+void piecewise_linear_advection()
+//========================================
 {
-  //---------------------------------------
-  // computes the flux for the piecewise
-  // constant method in y direction
-  //---------------------------------------
+  //--------------------------------
+  // piecewise linear method
+  //--------------------------------
 
-  double f = 0;
+  double dtdx = dt/dx;
+  double dtdy = dt/dy;
+  double rho_xl, rho_xr, rho_yl, rho_yr;
 
-  if (v < 0){
-    f = (rho2d_old[i][j]-rho2d_old[i][j+1]);
+
+  if (stepcounter % 2 == 0){
+    //-----------------
+    // sweep x first
+    //-----------------
+
+#pragma omp for
+    for (int i = 1; i<nx+3; i++){
+      for (int j = 0; j<ny+4; j++){
+        // sweep x
+        rho_xl = 0.5 * (rho2d_old[i][j] + rho2d_old[i-1][j]) - 
+          0.5*v*dtdx*(rho2d_old[i][j] - rho2d_old[i-1][j]);
+        rho_xr = 0.5 * (rho2d_old[i+1][j] + rho2d_old[i][j]) - 
+          0.5*v*dtdx*(rho2d_old[i+1][j] - rho2d_old[i][j]);
+        
+        rho2d_inter[i][j] = rho2d_old[i][j] - u*dtdx*(rho_xr - rho_xl);
+      }
+    }
+
+#pragma omp for
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 1; j<ny+3; j++){
+        // sweep y
+        rho_yl = 0.5 * (rho2d_inter[i][j] + rho2d_inter[i][j-1]) - 
+          0.5*v*dtdy*(rho2d_inter[i][j] - rho2d_inter[i][j-1]);
+        rho_yr = 0.5 * (rho2d_inter[i][j+1] + rho2d_inter[i][j]) - 
+          0.5*v*dtdy*(rho2d_inter[i][j+1] - rho2d_inter[i][j]);
+        
+        rho2d[i][j] = rho2d_inter[i][j] - v*dtdx*(rho_yr - rho_yl);
+      }
+    }
   }
-  else{
-    f = (rho2d_old[i][j-1]-rho2d_old[i][j]);
-  }
-
-  return (f);
-}
-
-
-
-
-
-
-
-
-
-//=================================
-double get_slope_x(int i, int j)
-//=================================
-{
-  //-------------------------------------------
-  // Get centered slope for piecewise linear
-  // method (Fromm’s method)
-  //-------------------------------------------
   
-  double slope = rho2d_old[i+1][j]-rho2d_old[i-1][j];
-  slope = slope/(2 * dx);
-  return (slope);
+
+  else {
+    //-----------------
+    // sweep y first
+    //-----------------
+
+#pragma omp for
+    for (int i = 0; i<nx+4; i++){
+      for (int j = 1; j<ny+3; j++){
+        // sweep y
+        rho_yl = 0.5 * (rho2d_old[i][j] + rho2d_old[i][j-1]) - 
+          0.5*v*dtdy*(rho2d_old[i][j] - rho2d_old[i][j-1]);
+        rho_yr = 0.5 * (rho2d_old[i][j+1] + rho2d_old[i][j]) - 
+          0.5*v*dtdy*(rho2d_old[i][j+1] - rho2d_old[i][j]);
+        
+        rho2d_inter[i][j] = rho2d_old[i][j] - v*dtdx*(rho_yr - rho_yl);
+      }
+    }
+
+#pragma omp for
+    for (int i = 1; i<nx+3; i++){
+      for (int j = 0; j<ny+4; j++){
+        // sweep x
+        rho_xl = 0.5 * (rho2d_inter[i][j] + rho2d_inter[i-1][j]) - 
+          0.5*v*dtdx*(rho2d_inter[i][j] - rho2d_inter[i-1][j]);
+        rho_xr = 0.5 * (rho2d_inter[i+1][j] + rho2d_inter[i][j]) - 
+          0.5*v*dtdx*(rho2d_inter[i+1][j] - rho2d_inter[i][j]);
+        
+        rho2d[i][j] = rho2d_inter[i][j] - u*dtdx*(rho_xr - rho_xl);
+      }
+    }
+  }
 }
 
 
 
 
-//=================================
-double get_slope_y(int i, int j)
-//=================================
-{
-  //-------------------------------------------
-  // Get centered slope for piecewise linear
-  // method (Fromm’s method)
-  //-------------------------------------------
-  
-  double slope = rho2d_old[i][j+1]-rho2d_old[i][j-1];
-  slope = slope/(2 * dy);
-  return (slope);
-}
+
+
+
+
+
+
+
 
 
 
@@ -499,8 +564,8 @@ double get_minmod_slope_x(int i, int j)
   // minmod slope limiter
   //---------------------------------
   
-  double a = rho2d_old[i][i] - rho2d_old[i][i-1];
-  double b = rho2d_old[i][i+1] - rho2d_old[i][i];
+  double a = rho2d_old[i][j] - rho2d_old[i-1][j];
+  double b = rho2d_old[i+1][j] - rho2d_old[i][j];
 
   a = a/dx;
   b = b/dx;
@@ -530,11 +595,11 @@ double get_minmod_slope_y(int i, int j)
   // minmod slope limiter
   //---------------------------------
   
-  double a = rho2d_old[i][i] - rho2d_old[i][i-1];
-  double b = rho2d_old[i][i+1] - rho2d_old[i][i];
+  double a = rho2d_old[i][j] - rho2d_old[i][j-1];
+  double b = rho2d_old[i][j+1] - rho2d_old[i][j];
 
-  a = a/dx;
-  b = b/dx;
+  a = a/dy;
+  b = b/dy;
 
   if (a * b > 0){
     if (fabs(a) < fabs(b)){
