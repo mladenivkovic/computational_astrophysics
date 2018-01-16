@@ -573,7 +573,7 @@ void minmod_advection()
 #pragma omp for
     for (int i = 2; i<nx+2; i++){
       for (int j = 1; j<ny+3; j++){
-        // sweep x
+        // sweep x BRANCHTEST
         
         rho_xl = 0.5 * (rho2d_old[i][j] + rho2d_old[i-1][j]) - 
           0.5*u*dt*get_minmod_slope_x(i-1, j, rho2d_old);
