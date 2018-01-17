@@ -315,7 +315,7 @@ if __name__ == "__main__":
 
         workdir= getcwd()
         profile_str = profiles[i].replace(" ","_")
-        outputfilename = "plot_advection_2d"+profile_str+methods[i]+"_nx="+str(nx)+"_ny="+str(ny)+"t="+str(times[i])
+        outputfilename = "plot_advection_2d_"+profile_str+methods[i]+"_nx="+str(nx)+"_ny="+str(ny)+"t="+str(times[i])
         fig_path = workdir+'/'+outputfilename+'.png'
         print("saving advection density plot as "+fig_path)
         plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )

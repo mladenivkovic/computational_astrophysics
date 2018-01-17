@@ -533,9 +533,9 @@ void VanLeer_advection()
       fluxleftx = u * rho2d_old[i-1][j] + 
         0.5*u*(1 - udtdx) * VanLeer_limiter_x(i, j) * (rho2d_old[i][j]-rho2d_old[i-1][j]);
       fluxrightx = u * rho2d_old[i][j] + 
-        0.5*u*(1 - udtdx) * VanLeer_limiter_y(i+1, j) * (rho2d_old[i+1][j]-rho2d_old[i][j]);
+        0.5*u*(1 - udtdx) * VanLeer_limiter_x(i+1, j) * (rho2d_old[i+1][j]-rho2d_old[i][j]);
       fluxlefty = v * rho2d_old[i][j-1] + 
-        0.5*v*(1 - vdtdy) * VanLeer_limiter_x(i, j) * (rho2d_old[i][j]-rho2d_old[i][j-1]);
+        0.5*v*(1 - vdtdy) * VanLeer_limiter_y(i, j) * (rho2d_old[i][j]-rho2d_old[i][j-1]);
       fluxrighty = v * rho2d_old[i][j] + 
         0.5*v*(1 - vdtdy) * VanLeer_limiter_y(i, j+1) * (rho2d_old[i][j+1]-rho2d_old[i][j]);
       rho2d[i][j] = rho2d_old[i][j] + udtdx * (fluxleftx - fluxrightx) + vdtdy * (fluxlefty - fluxrighty);
