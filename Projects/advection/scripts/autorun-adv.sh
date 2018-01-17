@@ -90,14 +90,19 @@ for method in pwconst pwlin minmod VanLeer; do
 
     cd "$mdir"
 
-    if [[ $method == pwconst ]]; then
+    if [[ "$method" == "pwconst" ]]; then
         methodnr=0
-    elif [[ $method == pwlin ]]; then
+    elif [[ "$method" == "pwlin" ]]; then
         methodnr=1
+    elif [[ "$method" == "minmod" ]]; then
+        methodnr=2
+    elif [[ "$method" == "VanLeer" ]]; then
+        methodnr=3
     fi
 
 
-    for nx in 100 1000 10000; do
+    for nx in 100; do
+    # for nx in 100 1000 10000; do
 
         #-----------------------------------------
         # Create new directory for nx
@@ -111,7 +116,7 @@ for method in pwconst pwlin minmod VanLeer; do
         cd "$nxdir"
 
         # run simulations
-        # run_simulations "$param" "$nx" "$methodnumber"
+        run_simulations "$param" "$nx" "$methodnr"
 
         # create plots
         postprocess_advection1d.py
