@@ -42,8 +42,6 @@ void initialise1d()
 #pragma omp single
   { rho_old = malloc((nx+4)*sizeof(double)); }
 #pragma omp single
-  { rho_inter = malloc((nx+4)*sizeof(double)); }
-#pragma omp single
   { 
     dx = 1.0/((double) nx); 
     u = 1;

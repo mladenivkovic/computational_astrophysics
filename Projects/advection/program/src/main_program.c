@@ -66,7 +66,7 @@ void run1d()
 {
  
   
-#pragma omp parallel shared (rho, rho_old, rho_inter, dt, dx, nx, courant_factor)
+#pragma omp parallel shared (rho, rho_old, dt, dx, nx, courant_factor)
   {
 
     //-----------------------
