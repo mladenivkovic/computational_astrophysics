@@ -316,6 +316,7 @@ if __name__=="__main__":
         av_force = get_average_force(inds, ppb, datafile)
 
         print("Plotting order =", o)
+        #  ax1.errorbar(bins, av_force,yerr=np.sqrt(av_force),
         ax1.plot(bins, av_force,
                 marker='o',
                 linestyle='--',

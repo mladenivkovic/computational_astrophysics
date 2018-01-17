@@ -76,6 +76,7 @@ echo "Importing computational astrophysics stuff."
 
     #alias  go='DATE=`date +%F_%Hh%M`; mpiexec -n 4 ../ramses3d-mladen unbinding.nml 2>"$DATE"_error.log | tee run"$DATE".log'
     alias nbod='nbody nbody-params ../files/data.ascii'
+    alias nbp='nbody nbody-params ../files/data.ascii && plot_multipole_forces.py && eog multipole_forces_plot*'
     alias ntest='nbody nbody-params-test ../files/testdata_multipole.ascii'
     # alias ntestplot='nbody nbody-params-test ../files/testdata_cube512.ascii && plot_particles_by_cell.py cellparticles.dat && eog particles_by_cell_plot-3D.png'
     # alias ntestplot='nbody nbody-params ../files/testdata_cube512.ascii && plot_cells.py cellparticles.dat cellcentres.dat && eog particles_by_cell_plot-3D.png'

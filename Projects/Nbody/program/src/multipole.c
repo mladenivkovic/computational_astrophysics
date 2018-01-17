@@ -40,7 +40,7 @@ int multipole_order = 2;
 
 void build_root();
 void refine(node * parentnode);
-void calc_direct(int *list1, int len1, int *list2, int len2);
+void calc_direct(node *target, node *source);
 void walk_tree(node * target, node * source);
 double theta(double y, node * source);
 void calc_multipole(double d[3], node * target, node * source);
@@ -698,6 +698,7 @@ void calculate_multipole_forces(int index)
 
   //-------------------------------------
   // loop over children recursively
+  // until you reach leaves
   //-------------------------------------
 
   int isleaf = thiscell->isleaf;
@@ -744,12 +745,12 @@ void walk_tree(node * target, node * source)
 
 
 
-  // if the source contains the target
   if (is_ancestor(target, source)){
-    // if source is target
+    // if the source contains the target
     if (target->cellindex == source->cellindex){
+      // if source is target: calculate direct if necessary, then return
       if (target->np > 1){
-        calc_direct(target->particles, target->np, target->particles, target->np);
+        calc_direct(target, target);
       }
       return;
     }
@@ -787,7 +788,7 @@ void walk_tree(node * target, node * source)
     }
     else {
       // check whether source is a leaf cell
-      if (!source->isleaf){
+      if (!(source->isleaf)){
         for (int c = 0; c < 8; c++){
           if (source->child[c] > 0){
             // if it isn't leaf, try children for multipole approach
@@ -797,7 +798,7 @@ void walk_tree(node * target, node * source)
       }
       else {
         // if it was a leaf cell, do direct force calculation
-        calc_direct(target->particles, target->np, source->particles, source->np);
+        calc_direct(target, source);
       }
     }
 
@@ -895,13 +896,17 @@ void calc_multipole(double d[3], node * target, node * source)
 
     for (int j = 0; j<3; j++){
       for (int k = 0; k<3; k++){
-        sum1[j] += 3*(source->multip_matrix[j][k])*d[k];
+        sum1[j] += 3*(source->multip_matrix[k][j])*d[j];
       }
-      sum2 += d[j]*sum1[j];
+    }
+
+    for (int k = 0; k<3; k++){
+      sum2 += sum1[k]*d[k];
     }
 
     for (int j = 0; j<3; j++){
-      force[j] += (sum1[j] - (source->multip_sq)*d[j])/absd_five - 
+      force[j] += 
+        (sum1[j] - (source->multip_sq)*d[j])/absd_five -
           2.5 * (sum2 - absd_sq*(source->multip_sq))* d[j] / absd_seven;
     }
   }
@@ -936,7 +941,7 @@ void calc_multipole(double d[3], node * target, node * source)
 
 
 //===========================================================
-void calc_direct(int *list1, int len1, int *list2, int len2)
+void calc_direct(node *target, node *source)
 //===========================================================
 {
   //===================================================
@@ -947,12 +952,19 @@ void calc_direct(int *list1, int len1, int *list2, int len2)
   // different cells interacting (e.g. neighbours)
   //===================================================
 
+
+  int len_tar = target->np;
+  int len_src = source->np;
+
+  int *plist_tar = target->particles;
+  int *plist_src = source->particles;
+
   double force_fact, rsq, dx, dy, dz;
   int p_i, p_j;
-  for (int i = 0; i < len1; i++){
-    for (int j = 0; j < len2; j++){
-      p_i = list1[i];
-      p_j = list2[j];
+  for (int i = 0; i < len_tar; i++){
+    for (int j = 0; j < len_src; j++){
+      p_i = plist_tar[i];
+      p_j = plist_src[j];
 
       if (p_i != p_j) {
         dx = x[p_i]-x[p_j];
@@ -996,8 +1008,8 @@ int is_ancestor(node* target, node* source)
   
   int tlev = target->level;
   int slev = source->level;
-  int sind = source->cellindex;
-  int ancind = target->cellindex;
+  int srcind = source->cellindex;
+  int ancind = target->cellindex; //initialise ancestor index as first parent
 
 
 
@@ -1005,7 +1017,7 @@ int is_ancestor(node* target, node* source)
     ancind = cells[ancind]->parent;
   }
 
-  if (sind == ancind){
+  if (srcind == ancind){
     return 1;
   }
   else{
