@@ -1,0 +1,58 @@
+\documentclass[10pt]{beamer}
+
+
+\usepackage{lmodern} 		% Diese beiden packages sorgen für echte 
+\usepackage[T1]{fontenc}	% Umlaute.
+
+\usepackage{amssymb, amsmath, color, graphicx, float, setspace, tipa}
+\usepackage[utf8]{inputenc} 
+\usepackage[english]{babel}
+\usepackage[justification=centering]{caption}
+\addto\captionsenglish{\renewcommand{\figurename}{}} %Abbildungen nicht bzw. anders beschriften.
+
+
+%\usepackage[pdfpagelabels,pdfstartview = FitH,bookmarksopen = true,bookmarksnumbered = true,linkcolor = black,plainpages = false,hypertexnames = false,citecolor = black, breaklinks]{hyperref}
+%\usepackage{url}
+\usepackage{picins} 		%Gleittext um Grafik. Befehl: parpic. Vorlage siehe unten
+\usepackage{longtable} 		%Seitenübergreifende Tabelle. Vorlage siehe unten
+\newtheorem*{bem}{Bemerkung} % Neue Theorem-Umgebung: Bemerkung
+\newcommand{\fillframe}{\vskip0pt plus 1filll} 
+\newcommand{\musr}{$\mu$SR }
+
+\usepackage{units}
+\newcommand{\half}{\nicefrac{1}{2}}
+
+\usepackage{tikz}
+\usetikzlibrary{patterns}
+
+\usepackage{grffile} %allow image filenames.that.include.dots.png
+
+
+
+%-----------------
+%BEAMER-SPEZIFISCH
+%-----------------
+
+
+\usetheme{metropolis}
+%deactivate a new page when a new section begins
+\metroset{sectionpage=none} 
+\usepackage{FiraSans}
+\usefonttheme[onlymath]{serif}
+
+
+
+% Verschiedene Varianten von usetheme, usecolortheme und usefonttheme kann man hier ausprobieren: http://deic.uab.es/~iblanes/beamer_gallery/
+
+
+%Halbtransparente Overlays (was als nächstes Element auf der Folie gezeigt wird)
+%\setbeamercovered{transparent} 
+
+% Entfernt Navigationssymbole unten
+%\beamertemplatenavigationsymbolsempty 
+
+% Seitenzahlen als links
+%\setbeamertemplate{footline}[frame]  
+%    \setbeamertemplate{footline}{%
+%    	\raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[10pt]{\hyperlink{tableofcontents}{\scriptsize\insertframenumber}}}}}
+

@@ -50,14 +50,14 @@ run_simulations()
         echo "t_end = 50;" >> "$param"
         echo "density_profile = ""$profile"";" >> "$param"
         echo "method = ""$methodnr"";" >> "$param"
-        echo "u = ""$u"";" >> $"param"
-        echo "v = ""$v"";" >> $"param"
+        echo "u = ""$u"";" >> "$param"
+        echo "v = ""$v"";" >> "$param"
 
 
         # start run
         echo ""
         echo "============================================================"
-        echo Started run for method $method nx=$nx profile=$profile
+        echo Started run for method $method nx=$nx profile=$profile u=$u v=$v
         echo "============================================================"
         echo ""
 
@@ -84,7 +84,8 @@ run_simulations()
 #----------------------
 
 
-for u in 0 1 0.707106781; do
+for u in 0.707106781; do
+# for u in 0 1 0.707106781; do
 
     #-----------------------------------------
     # Create new directory for each velocity
@@ -92,14 +93,14 @@ for u in 0 1 0.707106781; do
 
     v=-1
 
-    if [[ $u == 0 ]]; then
+    if [[ "$u" == "0" ]]; then
         v=1;
         veldir="u=0"
-    elif [[ $u == 1 ]]; then
+    elif [[ "$u" == "1" ]]; then
         v=0;
         veldir="u=1"
-    elif [[ $u == 0.707106781 ]]; then
-        v=$u
+    elif [[ "$u" == "0.707106781" ]]; then
+        v="$u"
         veldir="u=0.5sqrt(2)"
     fi
 
@@ -112,8 +113,8 @@ for u in 0 1 0.707106781; do
 
 
 
+    for method in pwlin ; do
     # for method in pwconst pwlin minmod VanLeer; do
-    for method in VanLeer; do
        
         #-----------------------------------------
         # Create new directory for each method
@@ -137,7 +138,8 @@ for u in 0 1 0.707106781; do
         fi
 
 
-        for nx in 100 200 500; do
+        for nx in 100 200; do
+        # for nx in 100 200 500; do
 
             #-----------------------------------------
             # Create new directory for nx

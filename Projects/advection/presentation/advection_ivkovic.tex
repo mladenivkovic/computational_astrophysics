@@ -1,0 +1,144 @@
+\include{header}
+
+
+
+
+%---------------------
+%--Metainformationen--
+%---------------------
+\title{Advection Project}
+
+
+\author[M. Ivkovic]{Mladen Ivkovic}
+\date{} 
+
+
+% \title[Kurzform]{Vortrag zur Berechenbarkeit}
+%     Titel des Vortrages
+% \subtitle[Kurzform]{Untertitel}
+%     Untertitel
+% \author[M. Schulz]{Michael Schulz}
+%     Autor festlegen
+% \institute[IfI -- HU Berlin]{Institut für Informatik\\ Humboldt-Universität zu Berlin}
+%     Angabe des Institutes
+% \date[26.05.06]{26. Mai 2006}
+%     Datum der Präsentation, alternativ kann mittels \date{\today} auch das aktuelle Datum eingetragen werden.
+% \logo{\pgfimage[width=2cm,height=2cm]{hulogo}}
+%     Die Datei hulogo.pdf (bzw. hulogo.png, hulogo.jpg, hulogo.mps bei Verwendung von pdftex als Backend) als Logo auf allen Folien, hier mithilfe des Paketes pgf.
+% \titlegraphic{\includegraphics[width=2cm,height=2cm]{hulogo}}
+%     Die Datei hulogo.pdf (bzw. analog wie bei \logo auch entsprechendes Format) als Logo nur auf der Titelseite unter Verwendung des Paketes graphicx.
+
+
+
+
+
+
+
+
+%===================================================================================
+%===================================================================================
+% \begin{frame}[Overlay-Aktionen][Optionen]{Titel}{Untertitel}
+% 
+% Overlay-Aktionen
+%     Overlay-Aktionen setzen die Standard-Overlay-Aktionen aller Umgebungen innerhalb des Frames, welche Aktion-Spezifikationen erlauben. Dazu gehören u.a. \item bei Listen und Block-Umgebungen.
+% 
+%     <+->
+%         Sorgt dafür, dass die Elemente stückweise zum Vorschein kommen.
+% 
+% Optionen
+% 
+%     allowdisplaybreaks
+%         Sorgt durch Aufruf von \allowdisplaybreaks aus AMS-LaTeX für einen Seitenumbruch bei mehrzeiligen Formelumgebungen. Funktioniert nur im Zusammenhang mit der Option allowframebreaks
+%     allowframebreaks
+%         Passt der Inhalt nicht mehr auf ein Slide, wird er automatisch auf mehrere Slides verteilt. Allerdings ist somit kein Overlay mehr möglich.
+%     b,c,t
+%         Sorgt dafür, dass der Frame nach unten (b), zentriert (c) oder nach oben (t) ausgerichtet wird.
+%     fragile
+%         Wird für Quelltextumgebungen, z.B. verbatim, benötigt.
+%     label=name
+%         Legt einen Namen für ein Frame fest um es später mit \againframe{name} erneut aufrufen zu können.
+%     plain
+%         Unterdrückt die Anzeige der Überschrift, Fußzeile und Sidebar.
+%     squeeze
+%         Verkleinert die vertikalen Abstände so weit wie möglich um u.U. mehr auf der Folie unterbringen zu können.
+% 
+%===================================================================================
+%===================================================================================
+
+
+
+
+\begin{document}
+
+
+\begin{frame}{}
+	\titlepage
+\end{frame}
+
+
+\section{Introduction}
+\include{1-introduction}
+
+
+\section{Piecewise Constant Method}
+\include{2-pwconst}
+
+\section{Piecewise Linear Method}
+\include{3-pwlin}
+
+\section{Minmod Slope Limiter}
+\include{4-minmod}
+
+
+\section{Van Leer Slope Limiter}
+\include{5-VanLeer}
+
+
+\section{Precision of the Algorithms}
+
+\begin{frame}
+	\frametitle{Precision of the Algorithms}
+	Quantify error through $L1$ error norm: $L1 = \frac{1}{N} \sum\limits_i |\rho_i - \tilde{\rho}(x_i)|$, where $\tilde{\rho}(x_i)$ is the analytical solution.\\[2em]
+	
+	For $t = 100$:\\\vfill
+	
+	\begin{columns}
+		\column{.37\textwidth}
+			\includegraphics[width=\textwidth]{../results/1D/errors/errorplot_advection_step_function_t=100.0.png}
+		\column{.37\textwidth}
+			\includegraphics[width=\textwidth]{../results/1D/errors/errorplot_advection_linear_step_t=100.0.png}
+		\column{.37\textwidth}	
+			\includegraphics[width=\textwidth]{../results/1D/errors/errorplot_advection_gauss_t=100.0.png}	
+	\end{columns}
+	
+\end{frame}
+
+
+
+
+
+\section{2D Advection}
+
+
+\include{6-2d-advection}
+\include{2dx}
+\include{2dy}
+\include{2ddiagonal}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}

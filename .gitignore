@@ -8,4 +8,17 @@ Projects/Nbody/exec/
 Projects/Nbody/testing
 
 Projects/advection/exec
+Projects/advection/results
+Projects/advection/presentation/images
 Projects/advection/program/bin
+
+
+*.log
+*.aux
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
