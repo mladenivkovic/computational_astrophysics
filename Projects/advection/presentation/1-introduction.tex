@@ -1,0 +1,110 @@
+\begin{frame}
+	\frametitle{Introduction}
+	The ideal gas equations form a set of hyperbolic differential equations of the form
+%	
+	\begin{align*}
+		\frac{\partial \mathbf{U}}{\partial t} + \Delta \cdot \mathbf{F} = 0
+	\end{align*}
+%	
+	In this project, consider the 1D advection of the mass density $\rho$ with a global constant velocity $u$:
+%	
+	\begin{align*}
+		\frac{\partial \rho}{\partial t} + u \frac{\partial \rho}{\partial x}  = 0
+	\end{align*}
+%	
+	The analytical solution is given by any function $q(x)$ with $\rho(x, t) = q(x-ut)$, which is $q(x)$ again translated by $ut$ along the $x$-direction.
+\end{frame}
+
+
+
+\begin{frame}
+	\frametitle{Solution Scheme: Finite Volume Method}
+%	\begin{block}{Finite difference methods}
+%		Approximate differential operators through finite difference approximations
+%	\end{block}
+%	\begin{block}{Finite volume methods}
+%		Make use of the divergence theorem: Convert volume integrals of finite volumes (cells) of divergence terms to surface integrals of fluxes though surfaces.
+%	\end{block}	
+%	\begin{block}{Method of Lines}
+%		Approximate all but one derivative by finite differences. The equation for
+%	\end{block}	
+%	\begin{block}{Spectral Methods}
+%		Represent solution by a linear combination of functions, transforming the PDE to algebraic equations or ODEs, e.g. by applying Fourier techniques.
+%	\end{block}	
+
+	Divide space into $N$ cells of same size.
+
+	Make use of the divergence theorem: Convert volume integrals of finite volumes (cells) of divergence terms to surface integrals of fluxes though surfaces.
+	
+	Advantage for conservation laws: Finite volume method is conservative, because $F_{i+\tfrac{1}{2}} = F_{(i+1)-\tfrac{1}{2}}$
+\end{frame}
+
+
+
+
+
+
+\begin{frame}
+	\frametitle{Solution Scheme: Problems}
+	
+	\begin{block}{Direction of information}
+		In this problem, all characteristics propagate downstream: Information strictly travels in the flow direction.\\
+		$\Rightarrow$ $\rho_i$ mustn't depend on downstream value. Otherwise, you'll be using ``information that isn't there yet''.\\
+		$\Rightarrow$ The discretisation will depend on the sign of the velocity $u$.
+	\end{block}
+
+	\begin{block}{CFL Condition}
+		For explicit integration methods, we need to limit the time step such that information can travel at most by 1 cell during each time step to avoid instabilities.\\
+		In 1D: $\Delta t \leq \Delta x / u\quad$ ;  In $N$D: $\Delta t \leq [\sum_i^N u_i / \Delta x_i ]^{-1}$
+	\end{block}
+
+	\begin{block}{Numerical Diffusion}
+		The solution is not advected perfectly (except for $\Delta t = \frac{\Delta x}{u}$) but smoothed out. The numerical algorithm has a diffusion term as a by-product For a first order algorithm, we're effectively solving $\frac{\partial \rho}{\partial t} + u \frac{\partial \rho}{\partial x} = \frac{\Delta x u}{2}\frac{\partial^2 \rho}{\partial x^2}$
+	\end{block}
+
+\end{frame}
+
+
+
+
+
+
+\begin{frame}
+	\frametitle{Periodic Boundary Conditions}
+	
+	Simulate a periodic boundary by introducing ghost cells:
+
+
+
+	\begin{tikzpicture}[xscale=.9,yscale=1,samples=400, transform shape,every node/.style={scale=.8}]
+		%===============
+		%	Sequential
+		%===============
+		
+		
+		%real Grid
+		\filldraw[fill=green!10,draw=teal!80, line width=.15mm] (0, 0) rectangle (8, 1);
+		\draw[step=1cm,lightgray,very thin] (0, 0) grid (8,1);
+		\draw[draw=teal!80, line width=.15mm] (0, 0) rectangle (8, 1);
+
+		% pattern for real cells
+		\fill[pattern=horizontal lines, pattern color=teal!40]  (0,0) rectangle (2, 1);	
+		\fill[pattern=horizontal lines, pattern color=teal!40]  (6,0) rectangle (8, 1);	
+			
+		% Ghost cells left	
+		\filldraw[fill=red!20,draw=red!80, line width=.15mm] (-2, 0) rectangle (0, 1);
+		\draw[step=1cm,lightgray,very thin] (-2, 0) grid (0,1);
+		\draw[draw=red!80, line width=.15mm] (-2, 0) rectangle (0, 1);
+		
+		%Ghost cells right
+		\filldraw[fill=red!20,draw=red!80, line width=.15mm] (8, 0) rectangle (10, 1);
+		\draw[step=1cm,lightgray,very thin] (8, 0) grid (10,1);
+		\draw[draw=red!80, line width=.15mm] (8, 0) rectangle (10, 1);	
+
+
+		% Arrows
+		\draw[<-, black!70, thick] (-1,1.2) to[bend right=-10] (7,1.2);
+		\draw[<-, black!70, thick] (9,-0.2) to[bend right=-10] (1, -0.2);
+	
+	\end{tikzpicture}
+\end{frame}

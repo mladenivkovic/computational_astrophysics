@@ -193,12 +193,19 @@ void get_timestep2d()
   //--------------------------------------------
 
 
-  dt = courant_factor/(fabs(u)/dx + fabs(v)/dy);
+  dt = courant_factor/(u/dx + v/dy);
   // dt = 0.5*courant_factor *dx/ (sqrt(u*u + v*v));
 
   // check if you're jumping over output time step
   if ( t + dt >= t_out[t_out_step] ){
-    dt = t_out[t_out_step] - t;
+    if ( fabs(t_out_step -t -dt) <= 1e-4 ){
+      // if difference is too small, cheat a bit
+      t = t_out[t_out_step];
+    }
+    else{
+      // reduce dt so that you get exact timestep for output
+      dt = t_out[t_out_step] - t;
+    }
   }
 
 
@@ -381,8 +388,8 @@ void piecewise_linear_advection()
   double vdtdy = v*dt/dy;
 
 #pragma omp for
-  for (int i = 1; i<nx+2; i++){
-    for (int j = 1; j<ny+2; j++){
+  for (int i = 2; i<nx+2; i++){
+    for (int j = 2; j<ny+2; j++){
       rho2d[i][j] = rho2d_old[i][j] - 
         udtdx *(rho2d_old[i][j] - rho2d_old[i-1][j]) - 0.5*udtdx*(slope_x(i, j) - slope_x(i-1, j))*(dx - u * dt) -
         vdtdy *(rho2d_old[i][j] - rho2d_old[i][j-1]) - 0.5*vdtdy*(slope_y(i, j) - slope_y(i, j-1))*(dy - v * dt);

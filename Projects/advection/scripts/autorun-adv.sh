@@ -38,7 +38,7 @@ run_simulations(){
     for profile in 0 1 2; do
         # Write param file
         echo "verbose = 1;" >> "$param"
-        echo "courant_factor = 0.9;" >> "$param"
+        echo "courant_factor = 0.5;" >> "$param"
         echo "nx = ""$nx"";" >> "$param"
         echo "t_end = 100;" >> "$param"
         echo "density_profile = ""$profile"";" >> "$param"
@@ -76,8 +76,8 @@ run_simulations(){
 
 
 
+# for method in pwconst pwlin ; do
 for method in pwconst pwlin minmod VanLeer; do
-# for method in minmod VanLeer; do
    
     #-----------------------------------------
     # Create new directory for each method
@@ -101,8 +101,8 @@ for method in pwconst pwlin minmod VanLeer; do
     fi
 
 
-    for nx in 100; do
-    # for nx in 100 1000 10000; do
+    # for nx in 100 1000 10000 500 2000 5000; do
+    for nx in 200 ; do
 
         #-----------------------------------------
         # Create new directory for nx

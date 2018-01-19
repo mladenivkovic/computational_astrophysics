@@ -321,7 +321,7 @@ if __name__ == "__main__":
         plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )
         print("Done density profile plot\n")
 
-        #  plt.close()
+        plt.close(fig)
 
 
 

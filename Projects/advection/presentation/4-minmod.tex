@@ -1,0 +1,42 @@
+
+\begin{frame}
+	\frametitle{Minmod Slope Limiter}
+	
+	\begin{align*}
+		s_i^n = \mathrm{minmod} \left( \frac{\rho_i^n - \rho_{i-1}^n}{\Delta x}, \frac{\rho_{i+1}^n - \rho_i^n}{\Delta x} \right)
+	\end{align*}
+	with
+	\begin{align*}
+		\mathrm{minmod}(a, b) = \begin{cases}
+		 	a & \text{ if } |a| < |b| \text{ and } ab > 0\\		
+		 	b & \text{ if } |a| > |b| \text{ and } ab > 0\\
+			0 & \text{ if } ab < 0
+								\end{cases}
+	\end{align*}
+\end{frame}
+
+
+
+
+
+
+\begin{frame}
+	\vspace{10pt}
+	\begin{columns}
+		\column{.33\textwidth}
+			\centering
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=100/plot_advection_step_function_minmod_nx=100.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=1000/plot_advection_step_function_minmod_nx=1000.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=10000/plot_advection_step_function_minmod_nx=10000.png}
+		\column{.33\textwidth}
+			\centering
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=100/plot_advection_linear_step_minmod_nx=100.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=1000/plot_advection_linear_step_minmod_nx=1000.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=10000/plot_advection_linear_step_minmod_nx=10000.png}
+		\column{.33\textwidth}
+			\centering
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=100/plot_advection_gauss_minmod_nx=100.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=1000/plot_advection_gauss_minmod_nx=1000.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/minmod/nx=10000/plot_advection_gauss_minmod_nx=10000.png}
+	\end{columns}
+\end{frame}

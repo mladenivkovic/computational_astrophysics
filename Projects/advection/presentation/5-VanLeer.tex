@@ -1,0 +1,44 @@
+
+\begin{frame}
+	\frametitle{Van Leer Slope Limiter}
+	Rewrite flux (assuming $u = 1$) as
+	\begin{align*}
+		f_{i-\half}^{n+\half} &= u \rho_{i-1} + \frac{1}{2} u \left( 1 - \frac{u\Delta t}{\Delta x} \right) \phi(r_{i-\half}^n) (q_i^n - q_{i-1}^n)\\
+		r_{i-\half}^n &= \frac{q_{i-1}^n - q_{i-2}^n}{q_i^n - q_{i-1}^n}
+	\end{align*}
+	Here, $\phi$ is the slope/flux limiter.
+	
+	The Van Leer flux limiter is defined as
+	\begin{align*}
+		\phi(r) = \frac{r - |r|}{1 - |r|}
+	\end{align*}
+\end{frame}
+
+
+
+
+
+
+
+\begin{frame}
+	\vspace{10pt}
+	\begin{columns}
+		\column{.33\textwidth}
+			\centering
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=100/plot_advection_step_function_VanLeer_nx=100.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=1000/plot_advection_step_function_VanLeer_nx=1000.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=10000/plot_advection_step_function_VanLeer_nx=10000.png}
+		\column{.33\textwidth}
+			\centering
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=100/plot_advection_linear_step_VanLeer_nx=100.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=1000/plot_advection_linear_step_VanLeer_nx=1000.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=10000/plot_advection_linear_step_VanLeer_nx=10000.png}
+		\column{.33\textwidth}
+			\centering
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=100/plot_advection_gauss_VanLeer_nx=100.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=1000/plot_advection_gauss_VanLeer_nx=1000.png}\\
+			\includegraphics[height=.33\textheight]{../results/1D/VanLeer/nx=10000/plot_advection_gauss_VanLeer_nx=10000.png}
+	\end{columns}
+\end{frame}
+
+

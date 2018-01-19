@@ -54,9 +54,12 @@ void initialise1d()
   //------------------------------
 
   if (density_profile == 0){
-    //--------------------------------------------
-    printf("Using step density profile.\n");
-    //--------------------------------------------
+#pragma omp single
+    {
+      //--------------------------------------------
+      printf("Using step density profile.\n");
+      //--------------------------------------------
+    }
 #pragma omp for
     for (int i = 0; i<nx; i++){
       if (i*dx <= 0.3){
@@ -71,9 +74,12 @@ void initialise1d()
     }
   }
   else if (density_profile == 1){
-    //--------------------------------------------
-    printf("Using linear step density profile.\n");
-    //--------------------------------------------
+#pragma omp single
+    {
+      //--------------------------------------------
+      printf("Using linear step density profile.\n");
+      //--------------------------------------------
+    }
 #pragma omp for
     for (int i = 0; i<nx; i++){
       if (i*dx <= 0.3){
@@ -88,9 +94,12 @@ void initialise1d()
     }
   }
   else if (density_profile == 2){
-    //--------------------------------------------
-    printf("Using gauss density profile.\n");
-    //--------------------------------------------
+#pragma omp single
+    {
+      //--------------------------------------------
+      printf("Using gauss density profile.\n");
+      //--------------------------------------------
+    }
 #pragma omp for
     for (int i = 0; i<nx; i++){
       rho[i+2] = 1 + exp(-pow((i*dx - 0.5), 2)/0.1);
@@ -129,7 +138,7 @@ void get_timestep1d()
   // Compute the next timestep according to CFL
   //--------------------------------------------
 
-  dt = courant_factor*fabs(dx / u);
+  dt = courant_factor * dx / fabs(u);
 
   // check if you're jumping over output time step
   if ( t + dt >= t_out[t_out_step] ){
@@ -249,13 +258,9 @@ void advect1d()
         rho[i] = rho_old[i] + c * (fluxleft - fluxright);
       }
     }
-    else{
-#pragma omp for
-      for (int i = 2; i<nx+2; i++){
-        fluxleft = u * rho_old[i] - 0.5*u*(1 + c) * VanLeer_limiter2(i) * (rho_old[i]-rho_old[i-1]);
-        fluxright = u * rho_old[i+1] - 0.5*u*(1 + c) * VanLeer_limiter2(i+1) * (rho_old[i+1]-rho_old[i]);
-        rho[i] = rho_old[i] + c * (fluxleft - fluxright);
-      }
+    else {
+      printf("Can't handle u<0. Aborting\n");
+      exit(123);
     }
   }
 
@@ -328,7 +333,7 @@ double get_slope(int i)
 //===========================
 {
   //-------------------------------------------
-  // Get centered slope for piecewise linear
+  // Get slope for piecewise linear
   // method (Lax Wendroff’s method)
   //-------------------------------------------
   
@@ -405,23 +410,3 @@ double VanLeer_limiter1(int i)
 
 
 
-//================================
-double VanLeer_limiter2(int i)
-//================================
-{
-  //---------------------------------------
-  // computes the Van Leer flux limiter
-  // for u < 0
-  //---------------------------------------
-
-  if (rho_old[i]-rho_old[i-1] != 0){
-    double r = (rho_old[i+1] - rho_old[i])/(rho_old[i]-rho_old[i-1]);
-    double absr = fabs(r);
-    double limiter = (r + absr)/(1 + absr);
-    return (limiter);
-  }
-  else{
-    return (0.0);
-  }
-
-}
