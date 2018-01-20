@@ -13,7 +13,8 @@ param="nbody-params"
 
 export OMP_NUM_THREADS=3
 
-for bucket in 01 10 20; do
+for bucket in 01; do
+# for bucket in 01 10 20; do
     bdir=bucket"$bucket"
     if [[ ! -d $bdir ]]; then
         mkdir -p "$bdir"
@@ -62,7 +63,7 @@ for bucket in 01 10 20; do
 
         # create plots
         plot_multipole_forces.py
-        plot_deviations_multipole.py
+        # plot_deviations_multipole.py
 
         cd "$homedir"
     done 

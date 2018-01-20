@@ -306,7 +306,7 @@ if __name__=="__main__":
         av_force = get_average_force(inds, ppb, s)
 
         print("Plotting alpha =", s)
-        ax1.plot(bins, av_force,
+        ax1.plot(bins[av_force>0], av_force[av_force>0],
                 marker='o',
                 linestyle='-',
                 markersize=3,
@@ -323,7 +323,7 @@ if __name__=="__main__":
     analytical_solution = analytical_average_force(bins[:-1], bins[1:], a, cum_mass[-1], mass[0])
 
     print("Plotting analytical solution")
-    ax1.plot(bins[1:], analytical_solution,
+    ax1.plot(bins[1:], analytical_solution, 'k',
             label='analytical average')
 
 

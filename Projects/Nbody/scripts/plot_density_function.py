@@ -295,10 +295,10 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     # Plotting
     #==================
 
-    fig = plt.figure(facecolor='white', figsize=(20, 8))
-    ax1 = fig.add_subplot(131)
-    ax2 = fig.add_subplot(132)
-    ax3 = fig.add_subplot(133)
+    fig = plt.figure(facecolor='white', figsize=(16, 8))
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    #  ax3 = fig.add_subplot(133)
 
     #---------------
     # get errorbars:
@@ -350,20 +350,20 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     ax2.plot(bins, mass_profile_theory, label='theoretical model')
 
 
-    #--------------------------------
-    # Plot cumulative mass profile
-    #--------------------------------
-    ax3.errorbar(bins, 
-            cum_mass, 
-            yerr=(cum_err_lower, cum_err_upper),
-            fmt='o',
-            markersize=1, 
-            capsize=2,
-            elinewidth=1,
-            label='binned data')
-
-    ax3.plot(bins, cmp(bins, a, totmass), label='theoretical model')
-
+    #  #--------------------------------
+    #  # Plot cumulative mass profile
+    #  #--------------------------------
+    #  ax3.errorbar(bins,
+    #          cum_mass,
+    #          yerr=(cum_err_lower, cum_err_upper),
+    #          fmt='o',
+    #          markersize=1,
+    #          capsize=2,
+    #          elinewidth=1,
+    #          label='binned data')
+    #
+    #  ax3.plot(bins, cmp(bins, a, totmass), label='theoretical model')
+    #
 
 
 
@@ -374,7 +374,7 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     # set tick params (especially digit size)
     ax1.tick_params(axis='both', which='major', labelsize=12, top=5)
     ax2.tick_params(axis='both', which='major', labelsize=12, top=5)
-    ax3.tick_params(axis='both', which='major', labelsize=12, top=5)
+    #  ax3.tick_params(axis='both', which='major', labelsize=12, top=5)
 
     #label axes
     ax1.set_xlabel(r'$r$ $[r_{max} = 1]$', 
@@ -393,14 +393,14 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
             labelpad=10, 
             family='serif', 
             size=16)
-    ax3.set_xlabel(r'$r$ $[r_{max} = 1]$', 
-            labelpad=10, 
-            family='serif', 
-            size=16)
-    ax3.set_ylabel(r'cumulative mass $[M_{tot}=10^6]$', 
-            labelpad=10, 
-            family='serif', 
-            size=16)
+    #  ax3.set_xlabel(r'$r$ $[r_{max} = 1]$',
+    #          labelpad=10,
+    #          family='serif',
+    #          size=16)
+    #  ax3.set_ylabel(r'cumulative mass $[M_{tot}=10^6]$',
+    #          labelpad=10,
+    #          family='serif',
+            #  size=16)
 
     #titles
     ax1.set_title(r'density profile', 
@@ -409,9 +409,9 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     ax2.set_title('mass profile', 
             family='serif', 
             size=18)
-    ax3.set_title('cumulative mass profile', 
-            family='serif', 
-            size=18)
+    #  ax3.set_title('cumulative mass profile',
+    #          family='serif',
+    #          size=18)
 
 
     # set log scale
@@ -419,8 +419,8 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     ax1.set_xscale('log')
     ax2.set_yscale('log')
     ax2.set_xscale('log')
-    ax3.set_yscale('log')
-    ax3.set_xscale('log')
+    #  ax3.set_yscale('log')
+    #  ax3.set_xscale('log')
 
     # set axis limits
     #  ax1.set_ylim([1e-2, 1e18])
@@ -431,12 +431,12 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     # grid
     ax1.grid()
     ax2.grid()
-    ax3.grid()
+    #  ax3.grid()
 
     # legend
     ax1.legend()
     ax2.legend()
-    ax3.legend()
+    #  ax3.legend()
 
 
     plt.tight_layout()

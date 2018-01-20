@@ -281,7 +281,7 @@ if __name__=="__main__":
     # Prepare figure
     #-----------------------------
 
-    fig = plt.figure(facecolor='white', figsize=(16, 9))
+    fig = plt.figure(facecolor='white', figsize=(12, 9))
     ax1 = fig.add_subplot(111)
 
 

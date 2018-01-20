@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <omp.h>
+#include <time.h>
 #include "commons.h"
 #include "io.h"
 #include "direct_forces.h"
@@ -45,12 +46,21 @@ int main(int argc, char *argv[])
   //-----------------------
   initialise(argc, argv);
 
+
+  // set up timing
+  clock_t start, end;
+  double cpu_time_used;
+
   //-----------------------
   // get direct force calc
   //-----------------------
   if (direct_force) {
     if (verbose) {printf("Started direct force calculation.\n");}
+
+    start = clock();
     get_direct_force();
+    end = clock();
+
     write_output(1);
 
     if (multipole){
@@ -78,6 +88,7 @@ int main(int argc, char *argv[])
     printf("Softening for direct force parts: %g\n", softening);
     build_tree();
     
+    start = clock();
     // Calculate multipole stuff
 #pragma omp parallel
     {
@@ -91,8 +102,10 @@ int main(int argc, char *argv[])
       }
 
 #pragma omp master 
-      { printf("Calculating multipole forces.\n");
-      printf("Using multipole order %d, bucket=%d, theta_max=%g\n", multipole_order, ncellpartmax, theta_max); }
+      { 
+        printf("Calculating multipole forces.\n");
+        printf("Using multipole order %d, bucket=%d, theta_max=%g\n", multipole_order, ncellpartmax, theta_max); 
+      }
 
 #pragma omp for
       // calculate actual forces
@@ -100,6 +113,8 @@ int main(int argc, char *argv[])
         calculate_multipole_forces(i);
       }
     }
+
+    end = clock();
 
 
     // write_cellparticles();
@@ -115,7 +130,8 @@ int main(int argc, char *argv[])
   //------------------
   // write run info
   //------------------
-  write_info();
+  cpu_time_used = (double) (end - start) /  CLOCKS_PER_SEC;
+  write_info(cpu_time_used);
 
 
 

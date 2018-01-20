@@ -2,10 +2,10 @@
 
 
 #=====================================================
-# Creates a plot with both direct forces calculation
-# and multipole method force calculation as function
-# of radius.
-# Doesn't need any cmdline args.
+# Compares time and accuracy of direct forces vs 
+# multipole forces.
+# Doesn't need any cmd line args, run in the
+# Nbody/results directory.
 #=====================================================
 
 
@@ -19,15 +19,15 @@ import matplotlib.pyplot as plt
 
 
 #==========================
-def read_commons(f_soft):
+def read_commons(datafile):
 #==========================
 
     """ 
 
-    reads in the data from given file.
+    reads in the data common to all runs from given file.
 
     PARAMETERS:
-        filename:   string of filename
+        datafile:   string of filename
 
 
     RETURNS:
@@ -37,7 +37,7 @@ def read_commons(f_soft):
     """
 
 
-    print("Reading in file")
+    print("Reading in commons")
 
 
 
@@ -45,7 +45,6 @@ def read_commons(f_soft):
     # Read in data
     #===============
 
-    datafile = "output_direct_force_"+f_soft+".dat"
     radius, mass = np.loadtxt(datafile, skiprows=1, usecols=([3, 4]), unpack=True)
 
 
@@ -168,9 +167,6 @@ def get_average_force(inds, ppb, datafile):
     """
 
    
-    print("Computing average force for ", s)
-
-
     force = np.loadtxt(datafile, skiprows=1, usecols=([8]), unpack=True)
 
 
@@ -217,7 +213,35 @@ def analytical_average_force(r1, r2, a, totmass, pm):
 
 
 
+#=============================
+def get_error(force_array):
+#=============================
+    """
+    Compute the L1 error
+    """
 
+    global analytical_solution
+
+    error = 0
+    n = force_array.shape[0]
+    for i in range(n-1):
+        error += abs(force_array[i] - analytical_solution[i])
+    error /= (n-1)
+    return error
+
+
+
+#==========================
+def get_time(datafile):
+#==========================
+    """
+    Get the time from datafile
+    returns : time
+    """
+
+    time = np.loadtxt(datafile, skiprows=1, usecols=([4]))
+
+    return time
 
 
 
@@ -231,53 +255,33 @@ if __name__=="__main__":
     # get all filenames
     #-----------------------
     
+    src_mltp = 'multipole_forces/'
+    src_direct = src_mltp+'direct_force/'
 
-    files=listdir()
+    dirforcefile = src_direct+'output_direct_force_0.01.dat' 
+    dirinfofile = src_direct+'info_direct_0.01.txt' 
 
-    softenings = []
-    orders = []
+    src_mltp += 'bucket01/'
 
-    for name in files:
-        if name[:20] == "output_direct_force_":
-            softening = name
-            softening = softening.replace("output_direct_force_", "")
-            softening = softening.replace(".dat","")
-            softenings.append(softening)
-        
-        if name[:17] == "output_multipole_":
-            order = name
-            order = order.replace("output_multipole_", "")
-            order = order.replace(".dat", "")
-            orders.append(order)
+    monopole_files = []
+    quadrupole_files = []
+    mono_info_files = []
+    quad_info_files = []
+    theta = [0.1, 0.2, 0.4, 0.5, 0.6, 0.8, 1]
 
-
-    if (len(softenings)<1):
-        print("No softenings found. Are you in the right directory?")
-        quit()
-    if (len(orders)<1):
-        print("No multipole orders found. Are you in the right directory?")
-        quit()
-
-
-    softenings.sort(key=float)
-    print("found data for softenings:", softenings)
-
-    orders.sort(key=float)
-    print("found data for multipole orders:", orders)
+    for thetamax in theta:
+        path=src_mltp+str(thetamax)+"/"
+        monopole_files.append(path+"output_multipole_0-"+str(thetamax).rjust(3)+".dat")
+        quadrupole_files.append(path+"output_multipole_2-"+str(thetamax).rjust(3)+".dat")
+        mono_info_files.append(path+"info_multipole_0.txt")
+        quad_info_files.append(path+"info_multipole_2.txt")
+    
 
 
 
 
 
-
-    #--------------------------------------
-    # Find data valid for all runs
-    #--------------------------------------
-
-
-    f_soft = softenings[0] #pick one
-
-    radius, mass = read_commons(f_soft)
+    radius, mass = read_commons(dirforcefile)
 
     nbins = 200
     inds, bins, cum_mass, ppb = bin_particles(radius, mass)
@@ -292,57 +296,75 @@ if __name__=="__main__":
     # Prepare figure
     #-----------------------------
 
-    fig = plt.figure(facecolor='white', figsize=(16, 9))
-    ax1 = fig.add_subplot(111)
+    fig = plt.figure(facecolor='white', figsize=(12, 6))
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
 
 
 
 
     #----------------------------------
-    # Calculate and plot average force
-    # for various softenings
+    # Calculate and average force
     #----------------------------------
 
-
-    for s in softenings:
-
-        datafile = "output_direct_force_"+s+".dat"
-        av_force = get_average_force(inds, ppb, datafile)
-
-        print("Plotting alpha =", s)
-        ax1.plot(bins, av_force,
-                marker='o',
-                linestyle='-',
-                markersize=3,
-                label=(r'$\alpha = $ ' + s))
-
-
-    for o in orders:
-
-        datafile = "output_multipole_"+o+".dat"
-        av_force = get_average_force(inds, ppb, datafile)
-
-        print("Plotting order =", o)
-        ax1.plot(bins, av_force,
-                marker='o',
-                linestyle='--',
-                markersize=3,
-                label=(r'order = ' + o))
-
-
-
-
-
-    #----------------------------------
-    # Calculate and plot average force
-    # for analytical solution
-    #----------------------------------
-   
     analytical_solution = analytical_average_force(bins[:-1], bins[1:], a, cum_mass[-1], mass[0])
+    direct_av_force = get_average_force(inds, ppb, dirforcefile)
 
-    print("Plotting analytical solution")
-    ax1.plot(bins[1:], analytical_solution,
-            label='analytical average')
+
+    # get error on direct force
+    error_direct = get_error(direct_av_force)
+    time_direct = get_time(dirinfofile)
+
+    error_monopole = []
+    error_quadrupole = []
+
+    time_monopole = []
+    time_quadrupole = []
+
+
+
+
+    for i in range(len(theta)):
+
+        av_force_mono = get_average_force(inds, ppb,monopole_files[i])
+        av_force_quad = get_average_force(inds, ppb,quadrupole_files[i])
+
+        err_mono = get_error(av_force_mono)/error_direct
+        error_monopole.append(err_mono)
+        err_quad = get_error(av_force_quad)/error_direct
+        error_quadrupole.append(err_quad)
+
+
+        tm = get_time(mono_info_files[i])/time_direct
+        time_monopole.append(tm)
+        tq = get_time(quad_info_files[i])/time_direct
+        time_quadrupole.append(tq)
+
+
+
+    # plot errors
+    ax1.plot(theta, error_monopole,
+            marker='o',
+            linestyle='-',
+            markersize=3,
+            label=('monopole'))
+    ax1.plot(theta, error_quadrupole,
+            marker='o',
+            linestyle='-',
+            markersize=3,
+            label=('quadrupole'))
+
+    ax2.plot(theta, time_monopole,
+            marker='o',
+            linestyle='-',
+            markersize=3,
+            label=('monopole'))
+    ax2.plot(theta, time_quadrupole,
+            marker='o',
+            linestyle='-',
+            markersize=3,
+            label=('quadrupole'))
+
 
 
 
@@ -352,30 +374,52 @@ if __name__=="__main__":
     #-------------------------
 
     ax1.legend()
-    ax1.set_xscale('log')
-    ax1.set_yscale('log')
-    ax1.set_xlabel(r'$r$',
-            #r'$r$ $[r_{max}=1]$', 
+    #  ax1.set_xscale('log')
+    #  ax1.set_yscale('log')
+    ax1.set_xlabel(r'$\theta$',
             labelpad=10, 
             family='serif', 
-            size=16)
-    ax1.set_ylabel(r'average force [code units]', 
+            size=12)
+    ax1.set_ylabel(r'Error[direct]/Error[multipole]',
             labelpad=10, 
             family='serif', 
-            size=16)
+            size=12)
 
-    ax1.set_title(r'average force profile for varying softening', 
+    ax1.set_title(r'Error of multipole method in dependence of $\theta$', 
             family='serif', 
-            size=18)
+            size=14)
     
     ax1.grid()
+
+
+    ax2.legend()
+    #  ax1.set_xscale('log')
+    #  ax1.set_yscale('log')
+    ax2.set_xlabel(r'$\theta$',
+            labelpad=10, 
+            family='serif', 
+            size=12)
+    ax2.set_ylabel(r'time[multipole]/time[direct]',
+            labelpad=10, 
+            family='serif', 
+            size=12)
+
+    ax2.set_title(r'Time usage of multipole method in dependence of $\theta$', 
+            family='serif', 
+            size=14)
+    
+    ax2.grid()
+
+
+
+
 
     plt.tight_layout()
 
     
     plt.figtext(.02, .03, str(bins.shape[0]-1)+' bins used', family='serif', size=12)
-    plt.figtext(.02, .01, r'$\epsilon = \alpha \cdot$ mean interparticle distance', family='serif', size=12)
-
+    #  plt.figtext(.02, .01, r'$\epsilon = \alpha \cdot$ mean interparticle distance', family='serif', size=12)
+    #
 
     #-------------------
     # save figure
@@ -385,7 +429,7 @@ if __name__=="__main__":
     workdir= str(getcwd())
     outputfilename = 'compare_direct_multipole'
     fig_path = workdir+'/'+outputfilename+'.png'
-    print("saving average force profile plot as "+fig_path)
+    print("saving comparison plot as "+fig_path)
     plt.savefig(fig_path, format='png', facecolor=fig.get_facecolor(), transparent=False, dpi=300)#,bbox_inches='tight' )
     print("Done")
 

@@ -294,9 +294,9 @@ void write_output(int output_case)
 
 
 
-//==============================
-void write_info()
-//==============================
+//====================================
+void write_info(double cputime_used)
+//====================================
 {
 
   //-------------------------------------
@@ -309,7 +309,7 @@ void write_info()
 
   if (multipole) {
     char multipole_str[10];
-    sprintf(multipole_str, "%.4g", 0.0);
+    sprintf(multipole_str, "%1d", multipole_order);
     strcat(filename, "multipole_");
     strcat(filename, multipole_str);
   }
@@ -326,8 +326,8 @@ void write_info()
   // write to file
   FILE *outfilep = fopen(filename, "w");
 
-  fprintf(outfilep, "%15s \t %15s \t %15s \t %15s\n", "scale_m", "scale_l", "scale_t", "softening");
-  fprintf(outfilep, "%15g \t %15g \t %15g \t %15g\n", scale_m, scale_l, scale_t, softening);
+  fprintf(outfilep, "%15s \t %15s \t %15s \t %15s\t %15s\n", "scale_m", "scale_l", "scale_t", "softening", "cpu time");
+  fprintf(outfilep, "%15g \t %15g \t %15g \t %15g\t %15g\n", scale_m, scale_l, scale_t, softening, cputime_used);
 
   fclose(outfilep);
 

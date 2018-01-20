@@ -1,2 +1,2 @@
-        scale_m 	         scale_l 	         scale_t 	       softening
-    4.62222e+06 	          724.69 	     1.11073e+06 	     0.000271424
+        scale_m 	         scale_l 	         scale_t 	       softening	        cpu time
+    4.62222e+06 	          724.69 	     1.11073e+06 	     0.000271424	         8.36251
