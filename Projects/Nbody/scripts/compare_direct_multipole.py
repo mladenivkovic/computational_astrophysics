@@ -296,7 +296,7 @@ if __name__=="__main__":
     # Prepare figure
     #-----------------------------
 
-    fig = plt.figure(facecolor='white', figsize=(12, 6))
+    fig = plt.figure(facecolor='white', figsize=(9, 4.5))
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
 
@@ -380,12 +380,12 @@ if __name__=="__main__":
             labelpad=10, 
             family='serif', 
             size=12)
-    ax1.set_ylabel(r'Error[direct]/Error[multipole]',
-            labelpad=10, 
+    ax1.set_ylabel(r'Error[multipole]/Error[direct]',
+            labelpad=5, 
             family='serif', 
             size=12)
 
-    ax1.set_title(r'Error of multipole method in dependence of $\theta$', 
+    ax1.set_title(r'Error of multipole method', 
             family='serif', 
             size=14)
     
@@ -400,11 +400,11 @@ if __name__=="__main__":
             family='serif', 
             size=12)
     ax2.set_ylabel(r'time[multipole]/time[direct]',
-            labelpad=10, 
+            labelpad=5, 
             family='serif', 
             size=12)
 
-    ax2.set_title(r'Time usage of multipole method in dependence of $\theta$', 
+    ax2.set_title(r'Time usage', 
             family='serif', 
             size=14)
     

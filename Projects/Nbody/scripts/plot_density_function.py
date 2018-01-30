@@ -295,7 +295,7 @@ def plot_profiles(bins, density_profile, mass_profile, outputfilename):
     # Plotting
     #==================
 
-    fig = plt.figure(facecolor='white', figsize=(16, 8))
+    fig = plt.figure(facecolor='white', figsize=(12, 6))
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
     #  ax3 = fig.add_subplot(133)
