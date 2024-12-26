@@ -82,24 +82,10 @@ void initialise2d()
     for (int i = 0; i<nx+4; i++){
       for (int j = 0; j<ny+4; j++){
 
-        if (i*dx <= 0.3){
-          rho2d[i][j] += 1;
-        }
-        else if (i*dx <= 0.6){
-          rho2d[i][j] += 2;
-        }
-        else{
-          rho2d[i][j] += 1;
-        }
+        rho2d[i][j] = 1;
 
-        if (j*dy <= 0.3){
-          rho2d[i][j] += 1;
-        }
-        else if (j*dy <= 0.6){
-          rho2d[i][j] += 2;
-        }
-        else{
-          rho2d[i][j] += 1;
+        if (i*dx > 0.333333 &&  i*dx <= 0.666666 && j*dy > 0.333333 && j * dy <= 0.666666){
+          rho2d[i][j] = 2;
         }
       }
     }
